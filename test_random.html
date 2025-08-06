@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四种元素随机化测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-area {
+            width: 800px;
+            height: 600px;
+            background-image: url('images/background.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #000;
+            position: relative;
+            border: 3px solid red;
+            margin: 20px auto;
+        }
+        
+        .livestream-element {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            z-index: 1;
+            pointer-events: all;
+            object-fit: contain;
+        }
+        
+        .livestream-element:hover {
+            transform: scale(1.1);
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .element-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .element-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .element-item.present {
+            border-left-color: #27ae60;
+            background: #d4edda;
+        }
+        
+        .element-item.absent {
+            border-left-color: #e74c3c;
+            background: #f8d7da;
+            opacity: 0.6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>四种元素随机化测试</h1>
+        
+        <div class="info">
+            <h2>测试说明</h2>
+            <p>这个页面测试四种元素类型的随机化效果：</p>
+            <ul>
+                <li><strong>优惠券 (Coupon)</strong> - 4种变体，70%出现概率</li>
+                <li><strong>订阅组件 (Subscription)</strong> - 2种变体，60%出现概率</li>
+                <li><strong>通知消息 (Notification)</strong> - 3种变体，80%出现概率</li>
+                <li><strong>弹窗组件 (Popup)</strong> - 2种变体，50%出现概率</li>
+            </ul>
+            <p>每次点击"生成新布局"都会随机决定：哪些元素类型出现、选择哪种变体、位置和大小。</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="generateNewLayout()">生成新布局</button>
+            <button class="btn" onclick="clearLayout()">清除布局</button>
+            <button class="btn" onclick="runMultipleTests()">运行多次测试</button>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalElements">0</div>
+                <div class="stat-label">总元素数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="couponCount">0</div>
+                <div class="stat-label">优惠券</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="subscriptionCount">0</div>
+                <div class="stat-label">订阅组件</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="notificationCount">0</div>
+                <div class="stat-label">通知消息</div>
+            </div>
+        </div>
+        
+        <div class="test-area" id="testArea">
+            <!-- 元素将在这里生成 -->
+        </div>
+        
+        <div class="info">
+            <h3>当前布局详情</h3>
+            <div class="element-list" id="elementList">
+                <!-- 元素列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 四种元素类型配置
+        const elementTypes = {
+            coupon: {
+                name: '优惠券',
+                variants: [
+                    'coupon_unconditional_unlimited',
+                    'coupon_unconditional_limited', 
+                    'coupon_conditional_unlimited',
+                    'coupon_conditional_limited'
+                ],
+                appearanceProbability: 0.7,
+                sizeConfig: {
+                    minWidth: 30,
+                    maxWidth: 100,
+                    minHeight: 30,
+                    maxHeight: 100
+                }
+            },
+            subscription: {
+                name: '订阅组件',
+                variants: [
+                    'subscription_social_proof',
+                    'subscription_benefit'
+                ],
+                appearanceProbability: 0.6,
+                sizeConfig: {
+                    minWidth: 40,
+                    maxWidth: 140,
+                    minHeight: 40,
+                    maxHeight: 100
+                }
+            },
+            notification: {
+                name: '通知消息',
+                variants: [
+                    'notification_social_proof',
+                    'notification_scarcity',
+                    'notification_price'
+                ],
+                appearanceProbability: 0.8,
+                sizeConfig: {
+                    minWidth: 40,
+                    maxWidth: 140,
+                    minHeight: 40,
+                    maxHeight: 100
+                }
+            },
+            popup: {
+                name: '弹窗组件',
+                variants: [
+                    'popup_scarcity_hijack',
+                    'popup_value_exchange'
+                ],
+                appearanceProbability: 0.5,
+                sizeConfig: {
+                    minWidth: 30,
+                    maxWidth: 160,
+                    minHeight: 30,
+                    maxHeight: 120
+                }
+            }
+        };
+
+        let currentElements = [];
+        let testResults = [];
+
+        // 工具函数
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRandomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // 获取背景图片尺寸
+        async function getBackgroundImageDimensions() {
+            const container = document.querySelector('#testArea');
+            const computedStyle = window.getComputedStyle(container);
+
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const imageRatio = img.width / img.height;
+                    const containerRatio = containerWidth / containerHeight;
+
+                    let actualWidth, actualHeight, offsetX, offsetY;
+
+                    if (containerRatio > imageRatio) {
+                        actualHeight = containerHeight;
+                        actualWidth = containerHeight * imageRatio;
+                        offsetX = (containerWidth - actualWidth) / 2;
+                        offsetY = 0;
+                    } else {
+                        actualWidth = containerWidth;
+                        actualHeight = containerWidth / imageRatio;
+                        offsetX = 0;
+                        offsetY = (containerHeight - actualHeight) / 2;
+                    }
+
+                    resolve({
+                        width: actualWidth,
+                        height: actualHeight,
+                        left: offsetX,
+                        top: offsetY
+                    });
+                };
+                img.src = computedStyle.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/i, '$1');
+            });
+        }
+
+        // 生成随机位置
+        async function generateRandomPosition(elementType) {
+            const backgroundDimensions = await getBackgroundImageDimensions();
+            const margin = 20;
+
+            const sizeConfig = elementTypes[elementType].sizeConfig;
+            const componentWidth = getRandomInt(sizeConfig.minWidth, sizeConfig.maxWidth);
+            const componentHeight = getRandomInt(sizeConfig.minHeight, sizeConfig.maxHeight);
+
+            const imageLeft = backgroundDimensions.left;
+            const imageTop = backgroundDimensions.top;
+            const imageWidth = backgroundDimensions.width;
+            const imageHeight = backgroundDimensions.height;
+
+            const maxComponentWidth = Math.min(componentWidth, imageWidth - margin * 2);
+            const maxComponentHeight = Math.min(componentHeight, imageHeight - margin * 2);
+
+            const availableWidth = imageWidth - maxComponentWidth - (margin * 2);
+            const availableHeight = imageHeight - maxComponentHeight - (margin * 2);
+
+            if (availableWidth <= 0 || availableHeight <= 0) {
+                return {
+                    left: Math.round(imageLeft + margin),
+                    top: Math.round(imageTop + margin),
+                    width: Math.max(imageWidth - margin * 2, 20),
+                    height: Math.max(imageHeight - margin * 2, 20)
+                };
+            }
+
+            const randomX = Math.random() * availableWidth;
+            const randomY = Math.random() * availableHeight;
+
+            const finalLeft = Math.round(imageLeft + margin + randomX);
+            const finalTop = Math.round(imageTop + margin + randomY);
+
+            return {
+                left: finalLeft,
+                top: finalTop,
+                width: maxComponentWidth,
+                height: maxComponentHeight
+            };
+        }
+
+        // 生成单个元素类型
+        async function generateElementType(elementType) {
+            const config = elementTypes[elementType];
+
+            // 随机决定是否出现
+            if (Math.random() > config.appearanceProbability) {
+                return null;
+            }
+
+            // 随机选择变体
+            const selectedVariant = getRandomChoice(config.variants);
+
+            // 生成随机位置
+            const position = await generateRandomPosition(elementType);
+
+            return {
+                type: selectedVariant,
+                elementType: elementType,
+                position: position,
+                present: true
+            };
+        }
+
+        // 生成新布局
+        async function generateNewLayout() {
+            const container = document.getElementById('testArea');
+            container.innerHTML = '';
+            currentElements = [];
+
+            const generatedState = {};
+
+            // 为每种元素类型生成状态
+            for (let elementType in elementTypes) {
+                const element = await generateElementType(elementType);
+                
+                if (element) {
+                    // 如果元素出现，记录其信息
+                    generatedState[element.type] = element;
+                    currentElements.push(element);
+                    
+                    // 同时标记该元素类型的其他变体为未出现
+                    elementTypes[elementType].variants.forEach(variant => {
+                        if (variant !== element.type) {
+                            generatedState[variant] = {
+                                type: variant,
+                                elementType: elementType,
+                                present: false
+                            };
+                        }
+                    });
+                } else {
+                    // 如果该元素类型不出现，标记所有变体为未出现
+                    elementTypes[elementType].variants.forEach(variant => {
+                        generatedState[variant] = {
+                            type: variant,
+                            elementType: elementType,
+                            present: false
+                        };
+                    });
+                }
+            }
+
+            // 渲染元素
+            for (let componentType in generatedState) {
+                const componentData = generatedState[componentType];
+                if (componentData.present) {
+                    const element = createComponentElement(componentData);
+                    if (element) {
+                        container.appendChild(element);
+                    }
+                }
+            }
+
+            updateStats();
+            updateElementList(generatedState);
+        }
+
+        // 创建组件元素
+        function createComponentElement(componentData) {
+            if (!componentData.present) {
+                return null;
+            }
+
+            const element = document.createElement('img');
+            element.src = `images/${componentData.type}.png`;
+            element.alt = componentData.type;
+            element.className = 'livestream-element';
+
+            element.style.left = `${componentData.position.left}px`;
+            element.style.top = `${componentData.position.top}px`;
+            element.style.width = `${componentData.position.width}px`;
+            element.style.height = `${componentData.position.height}px`;
+
+            return element;
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const stats = {
+                total: currentElements.length,
+                coupon: currentElements.filter(e => e.elementType === 'coupon').length,
+                subscription: currentElements.filter(e => e.elementType === 'subscription').length,
+                notification: currentElements.filter(e => e.elementType === 'notification').length,
+                popup: currentElements.filter(e => e.elementType === 'popup').length
+            };
+
+            document.getElementById('totalElements').textContent = stats.total;
+            document.getElementById('couponCount').textContent = stats.coupon;
+            document.getElementById('subscriptionCount').textContent = stats.subscription;
+            document.getElementById('notificationCount').textContent = stats.notification;
+        }
+
+        // 更新元素列表
+        function updateElementList(generatedState) {
+            const elementList = document.getElementById('elementList');
+            elementList.innerHTML = '';
+
+            for (let elementType in elementTypes) {
+                const config = elementTypes[elementType];
+                const variants = config.variants;
+                
+                variants.forEach(variant => {
+                    const elementData = generatedState[variant];
+                    const isPresent = elementData && elementData.present;
+                    
+                    const item = document.createElement('div');
+                    item.className = `element-item ${isPresent ? 'present' : 'absent'}`;
+                    
+                    const status = isPresent ? '✅ 出现' : '❌ 未出现';
+                    const details = isPresent ? 
+                        `位置: (${elementData.position.left}, ${elementData.position.top}) 尺寸: ${elementData.position.width}x${elementData.position.height}` : 
+                        '';
+                    
+                    item.innerHTML = `
+                        <strong>${config.name} - ${variant}</strong><br>
+                        <small>${status}</small><br>
+                        <small>${details}</small>
+                    `;
+                    
+                    elementList.appendChild(item);
+                });
+            }
+        }
+
+        // 清除布局
+        function clearLayout() {
+            const container = document.getElementById('testArea');
+            container.innerHTML = '';
+            currentElements = [];
+            updateStats();
+            document.getElementById('elementList').innerHTML = '';
+        }
+
+        // 运行多次测试
+        async function runMultipleTests() {
+            const testCount = 10;
+            const results = [];
+            
+            for (let i = 0; i < testCount; i++) {
+                const testResult = {
+                    testNumber: i + 1,
+                    elements: []
+                };
+                
+                // 为每种元素类型生成状态
+                for (let elementType in elementTypes) {
+                    const element = await generateElementType(elementType);
+                    if (element) {
+                        testResult.elements.push(element);
+                    }
+                }
+                
+                results.push(testResult);
+            }
+            
+            // 显示测试结果
+            console.log('多次测试结果:', results);
+            
+            const summary = {
+                totalTests: testCount,
+                averageElements: results.reduce((sum, r) => sum + r.elements.length, 0) / testCount,
+                elementTypeStats: {}
+            };
+            
+            for (let elementType in elementTypes) {
+                const count = results.filter(r => r.elements.some(e => e.elementType === elementType)).length;
+                summary.elementTypeStats[elementType] = {
+                    appeared: count,
+                    percentage: (count / testCount * 100).toFixed(1) + '%'
+                };
+            }
+            
+            console.log('测试统计:', summary);
+            alert(`测试完成！\n总测试次数: ${summary.totalTests}\n平均元素数: ${summary.averageElements.toFixed(1)}\n\n详细结果请查看控制台。`);
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            updateStats();
+        });
+    </script>
+</body>
+</html> 

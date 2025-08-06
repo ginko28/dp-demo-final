@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景尺寸测试</title>
+    <style>
+        .test-container {
+            width: 800px;
+            height: 600px;
+            background-image: url('images/background.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #000;
+            position: relative;
+            border: 2px solid red;
+        }
+        
+        .test-element {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 0, 0, 0.5);
+            border: 2px solid red;
+        }
+        
+        .info {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>背景尺寸测试</h2>
+        <p>红色边框显示容器边界，红色方块显示计算出的背景图片实际显示区域</p>
+        <div id="dimensions"></div>
+    </div>
+    
+    <div class="test-container" id="container">
+        <div class="test-element" id="topLeft"></div>
+        <div class="test-element" id="topRight"></div>
+        <div class="test-element" id="bottomLeft"></div>
+        <div class="test-element" id="bottomRight"></div>
+    </div>
+
+    <script>
+        async function getBackgroundImageDimensions() {
+            const container = document.querySelector('#container');
+            const computedStyle = window.getComputedStyle(container);
+
+            // 获取容器尺寸
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+
+            // 由于背景图片使用 background-size: contain，图片会完整显示在容器内
+            // 我们需要计算图片的实际显示尺寸
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const imageRatio = img.width / img.height;
+                    const containerRatio = containerWidth / containerHeight;
+
+                    let actualWidth, actualHeight, offsetX, offsetY;
+
+                    if (containerRatio > imageRatio) {
+                        // 图片高度填满容器，宽度按比例缩放
+                        actualHeight = containerHeight;
+                        actualWidth = containerHeight * imageRatio;
+                        offsetX = (containerWidth - actualWidth) / 2;
+                        offsetY = 0;
+                    } else {
+                        // 图片宽度填满容器，高度按比例缩放
+                        actualWidth = containerWidth;
+                        actualHeight = containerWidth / imageRatio;
+                        offsetX = 0;
+                        offsetY = (containerHeight - actualHeight) / 2;
+                    }
+
+                    resolve({
+                        width: actualWidth,
+                        height: actualHeight,
+                        left: offsetX,
+                        top: offsetY
+                    });
+                };
+                img.src = computedStyle.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/i, '$1');
+            });
+        }
+
+        async function testDimensions() {
+            const dimensions = await getBackgroundImageDimensions();
+            
+            document.getElementById('dimensions').innerHTML = `
+                <h3>计算出的背景图片尺寸：</h3>
+                <p>宽度: ${Math.round(dimensions.width)}px</p>
+                <p>高度: ${Math.round(dimensions.height)}px</p>
+                <p>左边距: ${Math.round(dimensions.left)}px</p>
+                <p>上边距: ${Math.round(dimensions.top)}px</p>
+            `;
+            
+            // 在四个角落放置测试元素
+            const margin = 10;
+            
+            // 左上角
+            document.getElementById('topLeft').style.left = `${dimensions.left + margin}px`;
+            document.getElementById('topLeft').style.top = `${dimensions.top + margin}px`;
+            
+            // 右上角
+            document.getElementById('topRight').style.left = `${dimensions.left + dimensions.width - 50 - margin}px`;
+            document.getElementById('topRight').style.top = `${dimensions.top + margin}px`;
+            
+            // 左下角
+            document.getElementById('bottomLeft').style.left = `${dimensions.left + margin}px`;
+            document.getElementById('bottomLeft').style.top = `${dimensions.top + dimensions.height - 50 - margin}px`;
+            
+            // 右下角
+            document.getElementById('bottomRight').style.left = `${dimensions.left + dimensions.width - 50 - margin}px`;
+            document.getElementById('bottomRight').style.top = `${dimensions.top + dimensions.height - 50 - margin}px`;
+        }
+
+        // 页面加载完成后运行测试
+        window.addEventListener('load', testDimensions);
+    </script>
+</body>
+</html> 

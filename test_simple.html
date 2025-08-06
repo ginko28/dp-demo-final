@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单区域测试</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            background-color: #000;
+            border: 2px solid #333;
+        }
+        .background {
+            background-image: url('images/background.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .test-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .info {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>简单区域测试</h1>
+    <p>点击图片上的任意位置来测试区域计算</p>
+    
+    <div class="container">
+        <div class="background" id="background"></div>
+    </div>
+    
+    <div class="info" id="info">
+        <h3>点击信息</h3>
+        <p>点击图片上的任意位置查看区域计算结果</p>
+    </div>
+
+    <script>
+        // 复制修复后的函数
+        function getBackgroundImageDimensions() {
+            const container = document.querySelector('.background');
+            const computedStyle = window.getComputedStyle(container);
+
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const imageRatio = img.width / img.height;
+                    const containerRatio = containerWidth / containerHeight;
+
+                    let actualWidth, actualHeight, offsetX, offsetY;
+
+                    if (containerRatio > imageRatio) {
+                        actualHeight = containerHeight;
+                        actualWidth = containerHeight * imageRatio;
+                        offsetX = (containerWidth - actualWidth) / 2;
+                        offsetY = 0;
+                    } else {
+                        actualWidth = containerWidth;
+                        actualHeight = containerWidth / imageRatio;
+                        offsetX = 0;
+                        offsetY = (containerHeight - actualHeight) / 2;
+                    }
+
+                    resolve({
+                        width: actualWidth,
+                        height: actualHeight,
+                        left: offsetX,
+                        top: offsetY
+                    });
+                };
+                img.src = computedStyle.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/i, '$1');
+            });
+        }
+
+        function calculateArea(x, y, backgroundDimensions) {
+            const width = backgroundDimensions.width;
+            const height = backgroundDimensions.height;
+
+            // 确保坐标在有效范围内
+            const clampedX = Math.max(0, Math.min(x, width));
+            const clampedY = Math.max(0, Math.min(y, height));
+
+            let areaX, areaY;
+            if (clampedX < width / 3) areaX = "左";
+            else if (clampedX < width * 2 / 3) areaX = "中";
+            else areaX = "右";
+
+            if (clampedY < height / 3) areaY = "上";
+            else if (clampedY < height * 2 / 3) areaY = "中";
+            else areaY = "下";
+
+            return areaX + areaY;
+        }
+
+        // 点击事件处理
+        document.getElementById('background').addEventListener('click', async function(event) {
+            const rect = event.target.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+            
+            const backgroundDimensions = await getBackgroundImageDimensions();
+            
+            // 转换为相对于图片的坐标
+            const imageX = clickX - backgroundDimensions.left;
+            const imageY = clickY - backgroundDimensions.top;
+            
+            const area = calculateArea(imageX, imageY, backgroundDimensions);
+            
+            // 创建点击标记
+            const dot = document.createElement('div');
+            dot.className = 'test-dot';
+            dot.style.left = (clickX - 10) + 'px';
+            dot.style.top = (clickY - 10) + 'px';
+            event.target.appendChild(dot);
+            
+            // 显示信息
+            const info = document.getElementById('info');
+            info.innerHTML = `
+                <h3>点击信息</h3>
+                <p><strong>点击位置:</strong> (${Math.round(clickX)}, ${Math.round(clickY)})</p>
+                <p><strong>图片相对位置:</strong> (${Math.round(imageX)}, ${Math.round(imageY)})</p>
+                <p><strong>图片尺寸:</strong> ${Math.round(backgroundDimensions.width)} × ${Math.round(backgroundDimensions.height)}</p>
+                <p><strong>图片偏移:</strong> (${Math.round(backgroundDimensions.left)}, ${Math.round(backgroundDimensions.top)})</p>
+                <p><strong>计算区域:</strong> <span style="color: red; font-weight: bold;">${area}</span></p>
+            `;
+            
+            console.log('点击区域计算:', {
+                '点击位置': { x: clickX, y: clickY },
+                '图片相对位置': { x: imageX, y: imageY },
+                '图片尺寸': { width: backgroundDimensions.width, height: backgroundDimensions.height },
+                '计算区域': area
+            });
+        });
+
+        // 页面加载时显示背景图片信息
+        window.addEventListener('load', async () => {
+            const backgroundDimensions = await getBackgroundImageDimensions();
+            console.log('背景图片尺寸信息:', backgroundDimensions);
+        });
+    </script>
+</body>
+</html> 

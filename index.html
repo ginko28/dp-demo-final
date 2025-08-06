@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCI研究实验工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 开场问卷页面 -->
+    <div id="intro-survey" class="intro-survey">
+        <div class="intro-content">
+            <h2>您好，感谢参与本次研究</h2>
+            <p class="intro-text">在开始浏览具体的直播间设计之前，我们想先简单了解一下您对本次直播内容"麦当劳"的总体看法。请根据您的真实感受回答以下问题。</p>
+
+            <form id="intro-form">
+                <!-- 问题1：品牌好感度 -->
+                <div class="question-group">
+                    <label class="question-title">1. 总体而言，您对"麦当劳"这个品牌的喜爱程度是？</label>
+                    <p class="scale-description">(1=非常不喜欢, 4=中立/无感, 7=非常喜欢)</p>
+                    <div class="likert-scale">
+                        <label><input type="radio" name="brand_liking" value="1" required>1</label>
+                        <label><input type="radio" name="brand_liking" value="2" required>2</label>
+                        <label><input type="radio" name="brand_liking" value="3" required>3</label>
+                        <label><input type="radio" name="brand_liking" value="4" required>4</label>
+                        <label><input type="radio" name="brand_liking" value="5" required>5</label>
+                        <label><input type="radio" name="brand_liking" value="6" required>6</label>
+                        <label><input type="radio" name="brand_liking" value="7" required>7</label>
+                    </div>
+                </div>
+
+                <!-- 问题2：购买意愿 -->
+                <div class="question-group">
+                    <label class="question-title">2. 在日常生活中，您主动选择购买麦当劳产品的可能性有多大？</label>
+                    <p class="scale-description">(1=完全不可能, 4=不确定, 7=非常可能)</p>
+                    <div class="likert-scale">
+                        <label><input type="radio" name="purchase_intention" value="1" required>1</label>
+                        <label><input type="radio" name="purchase_intention" value="2" required>2</label>
+                        <label><input type="radio" name="purchase_intention" value="3" required>3</label>
+                        <label><input type="radio" name="purchase_intention" value="4" required>4</label>
+                        <label><input type="radio" name="purchase_intention" value="5" required>5</label>
+                        <label><input type="radio" name="purchase_intention" value="6" required>6</label>
+                        <label><input type="radio" name="purchase_intention" value="7" required>7</label>
+                    </div>
+                </div>
+
+                <!-- 问题3：消费频率 -->
+                <div class="question-group">
+                    <label class="question-title">3. 在过去三个月里，您平均多久消费一次麦当劳？</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="consumption_frequency" value="never" required> 几乎不（或从未）</label>
+                        <label><input type="radio" name="consumption_frequency" value="monthly_or_less" required> 每月一次或更少</label>
+                        <label><input type="radio" name="consumption_frequency" value="biweekly" required> 每几周一次</label>
+                        <label><input type="radio" name="consumption_frequency" value="weekly" required> 每周一次左右</label>
+                        <label><input type="radio" name="consumption_frequency" value="several_times_weekly" required> 每周数次</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">开始实验</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 原有内容（设置为初始隐藏） -->
+    <h1 id="progress-indicator" style="display: none;">第 1 / 8 组</h1>
+    <div id="main-content" class="main-container" style="display: none;">
+        <!-- 左侧直播界面 -->
+        <div id="livestream-container" class="livestream-container">
+            <!-- 直播间背景图片 -->
+            <div class="livestream-background">
+                <!-- 动态生成的组件将在这里插入 -->
+            </div>
+        </div>
+
+        <!-- 右侧问卷 -->
+        <div id="survey-container" class="survey-container">
+            <h2>左侧界面为麦当劳直播间，界面由一些小组件构成(如优惠券，信息窗口，商品弹窗等)。请对左侧界面进行评价：</h2>
+            <form id="survey-form">
+                <!-- 问题1：行为结果 -->
+                <div class="question-group">
+                    <label class="question-title">1. 看到这个界面，你最想做的第一个操作是什么？(单选)</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="behavior_outcome" value="accept_offers" required> 接受优惠 - 点击各类优惠、福袋、红包等 ("入会领" "立刻关注")</label>
+                        <label><input type="radio" name="behavior_outcome" value="convert" required> 直接购买 - 点击"入会抢"，直接加入购物车，或立即购买等按钮</label>
+                        <label><input type="radio" name="behavior_outcome" value="explore" required> 浏览商品 - 滑动商品列表或点进某个商品看细节</label>
+                        <label><input type="radio" name="behavior_outcome" value="verify" required> 验证信息 - 查找更多信息来判断，比如查看用户评论、买家秀或商品详情</label>
+                        <label><input type="radio" name="behavior_outcome" value="ask" required> 寻求帮助 - 在评论区打字向主播提问，让他解答我的疑惑</label>
+                        <label><input type="radio" name="behavior_outcome" value="avoid" required> 忽略 - 主动忽略弹窗等营销信息</label>
+                    </div>
+                </div>
+
+                <!-- 问题2：归因评价 -->
+                <div class="question-group">
+                    <label class="question-title">2. 请根据该界面给您的整体感受，评价您对以下说法的同意程度。(1=完全不同意, 7=完全同意)</label>
+
+                    <!-- 语义线索的影响 -->
+                    <div class="likert-scale-group">
+                        <p class="sub-question">界面上的文字或数字信息（如"库存仅剩1件"、“倒计时”、"直播专享低价/限时价"、“xx正在下单”、“xx关注了主播”、“入会领券”）对我做决定的影响很大。</p>
+                        <div class="likert-scale">
+                            <label data-value="1"><input type="radio" name="semantic_cues" value="1" required></label>
+                            <label data-value="2"><input type="radio" name="semantic_cues" value="2" required></label>
+                            <label data-value="3"><input type="radio" name="semantic_cues" value="3" required></label>
+                            <label data-value="4"><input type="radio" name="semantic_cues" value="4" required></label>
+                            <label data-value="5"><input type="radio" name="semantic_cues" value="5" required></label>
+                            <label data-value="6"><input type="radio" name="semantic_cues" value="6" required></label>
+                            <label data-value="7"><input type="radio" name="semantic_cues" value="7" required></label>
+                        </div>
+                    </div>
+
+                    <!-- 视觉大小线索的影响 -->
+                    <div class="likert-scale-group">
+                        <p class="sub-question">元素的视觉大小/尺寸，颜色（如一个很大的"抢购"按钮）对我做决定的影响很大。</p>
+                        <div class="likert-scale">
+                            <label><input type="radio" name="visual_cues_size" value="1" required>1</label>
+                            <label><input type="radio" name="visual_cues_size" value="2" required>2</label>
+                            <label><input type="radio" name="visual_cues_size" value="3" required>3</label>
+                            <label><input type="radio" name="visual_cues_size" value="4" required>4</label>
+                            <label><input type="radio" name="visual_cues_size" value="5" required>5</label>
+                            <label><input type="radio" name="visual_cues_size" value="6" required>6</label>
+                            <label><input type="radio" name="visual_cues_size" value="7" required>7</label>
+                        </div>
+                    </div>
+
+                    <!-- 视觉位置线索的影响 -->
+                    <div class="likert-scale-group">
+                        <p class="sub-question">元素的位置（如一个正好在手边的弹窗）对我做决定的影响很大。</p>
+                        <div class="likert-scale">
+                            <label><input type="radio" name="visual_cues_position" value="1" required>1</label>
+                            <label><input type="radio" name="visual_cues_position" value="2" required>2</label>
+                            <label><input type="radio" name="visual_cues_position" value="3" required>3</label>
+                            <label><input type="radio" name="visual_cues_position" value="4" required>4</label>
+                            <label><input type="radio" name="visual_cues_position" value="5" required>5</label>
+                            <label><input type="radio" name="visual_cues_position" value="6" required>6</label>
+                            <label><input type="radio" name="visual_cues_position" value="7" required>7</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 提交按钮 - 移到这里 -->
+                <div class="question-group">
+                    <button type="submit" class="submit-btn">提交评价</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 感谢页面 -->
+    <div id="thank-you-page" class="thank-you-page" style="display: none;">
+        <div class="thank-you-content">
+            <h2>🎉 实验完成！</h2>
+            <p>感谢您参与本次HCI研究实验！</p>
+            <p>您已经完成了所有8个试次的测试。</p>
+            <p>您的数据已被记录</p>
+        </div>
+    </div>
+
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQ7ERXsX8XGUxzqUKUIWC5owmFywyVVa4",
+            authDomain: "dp-demo-bd205.firebaseapp.com",
+            projectId: "dp-demo-bd205",
+            storageBucket: "dp-demo-bd205.firebasestorage.app",
+            messagingSenderId: "217774153212",
+            appId: "1:217774153212:web:f8bef1d87f4884607d2679",
+            measurementId: "G-0J83G73TRP"
+        };
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>

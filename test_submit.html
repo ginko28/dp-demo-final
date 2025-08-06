@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>防重复提交测试</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .submit-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .submit-btn:hover:not(:disabled) {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background: white;
+        }
+        .log-entry.error {
+            border-left-color: #dc3545;
+            color: #dc3545;
+        }
+        .log-entry.success {
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="radio"] {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>防重复提交测试</h1>
+        <p>这个页面模拟实验的提交过程，测试防重复提交功能。</p>
+        
+        <form id="test-form">
+            <div class="form-group">
+                <label>测试问题 1:</label>
+                <label><input type="radio" name="q1" value="a" required> 选项A</label>
+                <label><input type="radio" name="q1" value="b" required> 选项B</label>
+            </div>
+            
+            <div class="form-group">
+                <label>测试问题 2:</label>
+                <label><input type="radio" name="q2" value="x" required> 选项X</label>
+                <label><input type="radio" name="q2" value="y" required> 选项Y</label>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submit-btn">提交测试</button>
+            <button type="button" class="submit-btn" onclick="resetTest()">重置测试</button>
+        </form>
+        
+        <div class="log" id="log">
+            <h3>操作日志</h3>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let isSubmitting = false;
+        let submitCount = 0;
+        
+        function addLog(message, type = 'info') {
+            const logContent = document.getElementById('log-content');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        function resetTest() {
+            isSubmitting = false;
+            submitCount = 0;
+            document.getElementById('test-form').reset();
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('submit-btn').textContent = '提交测试';
+            addLog('测试已重置', 'success');
+        }
+        
+        // 模拟异步提交过程
+        function simulateSubmit() {
+            return new Promise((resolve, reject) => {
+                const duration = 2000 + Math.random() * 3000; // 2-5秒随机时间
+                addLog(`开始模拟提交，预计耗时 ${Math.round(duration/1000)} 秒...`);
+                
+                setTimeout(() => {
+                    if (Math.random() > 0.1) { // 90%成功率
+                        resolve();
+                    } else {
+                        reject(new Error('模拟网络错误'));
+                    }
+                }, duration);
+            });
+        }
+        
+        document.getElementById('test-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            // 防止重复提交
+            if (isSubmitting) {
+                addLog('正在提交中，请勿重复点击', 'error');
+                return;
+            }
+            
+            // 检查表单完整性
+            const formData = new FormData(event.target);
+            const q1 = formData.get('q1');
+            const q2 = formData.get('q2');
+            
+            if (!q1 || !q2) {
+                addLog('请完成所有问题后再提交', 'error');
+                return;
+            }
+            
+            // 设置提交状态
+            isSubmitting = true;
+            submitCount++;
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            
+            addLog(`第 ${submitCount} 次提交开始`);
+            addLog(`表单数据: q1=${q1}, q2=${q2}`);
+            
+            try {
+                await simulateSubmit();
+                addLog('提交成功！', 'success');
+                submitBtn.textContent = '提交成功';
+                
+                // 模拟实验完成
+                if (submitCount >= 3) {
+                    addLog('实验完成，显示感谢页面', 'success');
+                    setTimeout(() => {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h1>🎉 实验完成！</h1><p>感谢参与测试！</p></div>';
+                    }, 1000);
+                } else {
+                    // 重置表单，准备下一次提交
+                    setTimeout(() => {
+                        event.target.reset();
+                        isSubmitting = false;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '提交测试';
+                        addLog('准备下一次提交...');
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                addLog(`提交失败: ${error.message}`, 'error');
+                submitBtn.textContent = '提交失败，请重试';
+                // 重置提交状态，允许重试
+                isSubmitting = false;
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // 页面加载时初始化
+        addLog('测试页面已加载，可以开始测试防重复提交功能');
+    </script>
+</body>
+</html> 

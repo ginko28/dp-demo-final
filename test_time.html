@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间格式测试</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .time-info {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .time-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .time-value {
+            font-family: monospace;
+            background: white;
+            padding: 5px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>时间格式测试</h1>
+    <p>这个页面显示不同的时间格式，帮助你理解时间戳的差异。</p>
+    
+    <div class="time-info">
+        <h3>当前时间的不同格式</h3>
+        <p><strong>UTC时间 (toISOString):</strong></p>
+        <div class="time-value" id="utc-time"></div>
+        
+        <p><strong>本地时间 (toString):</strong></p>
+        <div class="time-value" id="local-time"></div>
+        
+        <p><strong>本地时间 (toLocaleString):</strong></p>
+        <div class="time-value" id="locale-time"></div>
+        
+        <p><strong>时区信息:</strong></p>
+        <div class="time-value" id="timezone"></div>
+    </div>
+    
+    <div class="time-info">
+        <h3>时间转换示例</h3>
+        <p><strong>UTC → 本地时间:</strong></p>
+        <div class="time-value" id="utc-to-local"></div>
+        
+        <p><strong>本地时间 → UTC:</strong></p>
+        <div class="time-value" id="local-to-utc"></div>
+    </div>
+
+    <script>
+        function updateTimes() {
+            const now = new Date();
+            
+            // 显示不同格式的时间
+            document.getElementById('utc-time').textContent = now.toISOString();
+            document.getElementById('local-time').textContent = now.toString();
+            document.getElementById('locale-time').textContent = now.toLocaleString('zh-CN', {
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('timezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // 时间转换示例
+            const utcString = now.toISOString();
+            const utcDate = new Date(utcString);
+            document.getElementById('utc-to-local').textContent = `UTC: ${utcString} → 本地: ${utcDate.toString()}`;
+            
+            const localString = now.toString();
+            const localDate = new Date(localString);
+            document.getElementById('local-to-utc').textContent = `本地: ${localString} → UTC: ${localDate.toISOString()}`;
+        }
+        
+        // 初始更新
+        updateTimes();
+        
+        // 每秒更新一次
+        setInterval(updateTimes, 1000);
+        
+        console.log('时间格式测试信息:');
+        console.log('UTC时间:', new Date().toISOString());
+        console.log('本地时间:', new Date().toString());
+        console.log('时区:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+    </script>
+</body>
+</html> 
