@@ -15,7 +15,7 @@ const elementTypes = {
             'coupon_conditional_unlimited',
             'coupon_conditional_limited'
         ],
-        appearanceProbability: 0.7, // 70% 概率出现
+        appearanceProbability: 0.5, // 50% 概率出现
         sizeConfig: {
             minWidth: 30,
             maxWidth: 100,
@@ -29,7 +29,7 @@ const elementTypes = {
             'subscription_social_proof',
             'subscription_benefit'
         ],
-        appearanceProbability: 0.6, // 60% 概率出现
+        appearanceProbability: 0.5, // 50% 概率出现
         sizeConfig: {
             minWidth: 40,
             maxWidth: 140,
@@ -44,7 +44,7 @@ const elementTypes = {
             'notification_scarcity',
             'notification_price'
         ],
-        appearanceProbability: 0.8, // 80% 概率出现
+        appearanceProbability: 0.5, // 50% 概率出现
         sizeConfig: {
             minWidth: 40,
             maxWidth: 140,
