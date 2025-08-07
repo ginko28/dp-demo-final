@@ -1,9 +1,10 @@
 // 全局变量
 let currentTrial = 1;
-const totalTrials = 8;
+const totalTrials = 20;
 let allTrialsData = [];
 let introSurveyData = null;
 let isSubmitting = false; // 添加提交状态标志
+let experimentCompleted = false; // 添加实验完成标志，防止重复提交
 
 // 四种元素类型配置
 const elementTypes = {
@@ -339,11 +340,76 @@ async function renderTrial(generatedState) {
     for (let componentType in generatedState) {
         const componentData = generatedState[componentType];
         const element = await createComponentElement(componentData);
-
         if (element) {
             container.appendChild(element);
         }
     }
+
+    // === 新增：插入缩放同步的固定按钮 ===
+    // 获取底图显示区域和缩放比例
+    const backgroundDimensions = await getBackgroundImageDimensions();
+    const bgImg = new Image();
+    bgImg.src = 'images/background.png';
+    await new Promise(resolve => { bgImg.onload = resolve; });
+    const widthRatio = backgroundDimensions.width / bgImg.width;
+    const heightRatio = backgroundDimensions.height / bgImg.height;
+
+    // 获取按钮原始像素
+    const commentImg = new Image();
+    commentImg.src = 'images/comment.png';
+    await new Promise(resolve => { commentImg.onload = resolve; });
+    const cartImg = new Image();
+    cartImg.src = 'images/shopping_cart.png';
+    await new Promise(resolve => { cartImg.onload = resolve; });
+
+    // 你可以调整以下原始像素位置
+    const commentOriginLeft = 30; // 以background.png左上角为原点
+    const commentOriginTop = 1334;
+    const cartOriginLeft = 425;
+    const cartOriginTop = 1334;
+
+    // 计算缩放后的位置和尺寸
+    const commentLeft = backgroundDimensions.left + commentOriginLeft * widthRatio;
+    const commentTop = backgroundDimensions.top + commentOriginTop * heightRatio;
+    const commentWidth = commentImg.width * widthRatio;
+    const commentHeight = commentImg.height * heightRatio;
+
+    const cartLeft = backgroundDimensions.left + cartOriginLeft * widthRatio;
+    const cartTop = backgroundDimensions.top + cartOriginTop * heightRatio;
+    const cartWidth = cartImg.width * widthRatio;
+    const cartHeight = cartImg.height * heightRatio;
+
+    // 创建评论按钮
+    const commentBtn = document.createElement('img');
+    commentBtn.src = 'images/comment.png';
+    commentBtn.alt = 'comment';
+    commentBtn.className = 'livestream-element fixed-btn comment-btn';
+    commentBtn.style.position = 'absolute';
+    commentBtn.style.left = `${commentLeft}px`;
+    commentBtn.style.top = `${commentTop}px`;
+    commentBtn.style.width = `${commentWidth}px`;
+    commentBtn.style.height = `${commentHeight}px`;
+    commentBtn.addEventListener('click', handleComponentClick);
+    container.appendChild(commentBtn);
+
+    // 创建购物车按钮
+    const cartBtn = document.createElement('img');
+    cartBtn.src = 'images/shopping_cart.png';
+    cartBtn.alt = 'shopping_cart';
+    cartBtn.className = 'livestream-element fixed-btn cart-btn';
+    cartBtn.style.position = 'absolute';
+    cartBtn.style.left = `${cartLeft}px`;
+    cartBtn.style.top = `${cartTop}px`;
+    cartBtn.style.width = `${cartWidth}px`;
+    cartBtn.style.height = `${cartHeight}px`;
+    cartBtn.addEventListener('click', handleComponentClick);
+    container.appendChild(cartBtn);
+
+    // 给所有动态组件绑定点击事件
+    const allComponents = container.querySelectorAll('.livestream-element');
+    allComponents.forEach(el => {
+        el.addEventListener('click', handleComponentClick);
+    });
 }
 
 // 动态生成组件的函数
@@ -652,6 +718,12 @@ async function runTrial(trialNumber) {
 
     // 渲染界面
     await renderTrial(generatedState);
+    
+    // 渲染右侧任务1说明
+    renderTask1Instruction();
+    
+    // 重置点击状态
+    hasClickedComponent = false;
 }
 
 // 结束实验
@@ -759,8 +831,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 重置试次计数和数据数组
     currentTrial = 1;
     allTrialsData = [];
-    totalTrials = 8; // 确保这个值是8
+    totalTrials = 20; // 确保这个值是20
     isSubmitting = false; // 重置提交状态
+    experimentCompleted = false; // 重置实验完成状态
 
     const surveyForm = document.getElementById('survey-form');
     if (surveyForm) {
@@ -787,3 +860,488 @@ window.debugExperiment = {
 };
 
 console.log('调试工具已加载，可在控制台使用 window.debugExperiment 对象');
+
+// 弹窗DOM生成函数
+function showBehaviorModal(options, onSelect) {
+    // 移除已有弹窗
+    const oldModal = document.getElementById('behavior-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'behavior-modal';
+    modal.style.position = 'fixed';
+    modal.style.left = '0';
+    modal.style.top = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = '9999';
+
+    const box = document.createElement('div');
+    box.style.background = '#fff';
+    box.style.borderRadius = '12px';
+    box.style.padding = '32px 24px';
+    box.style.minWidth = '320px';
+    box.style.boxShadow = '0 8px 32px rgba(0,0,0,0.18)';
+    box.style.textAlign = 'center';
+
+    const title = document.createElement('div');
+    title.style.fontSize = '18px';
+    title.style.fontWeight = 'bold';
+    title.style.marginBottom = '24px';
+    title.textContent = options.title;
+    box.appendChild(title);
+
+    options.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.textContent = choice.label;
+        btn.style.display = 'block';
+        btn.style.width = '100%';
+        btn.style.margin = '12px 0';
+        btn.style.padding = '12px';
+        btn.style.fontSize = '16px';
+        btn.style.borderRadius = '8px';
+        btn.style.border = '1px solid #3498db';
+        btn.style.background = '#f8faff';
+        btn.style.cursor = 'pointer';
+        btn.onmouseenter = () => btn.style.background = '#eaf3fb';
+        btn.onmouseleave = () => btn.style.background = '#f8faff';
+        btn.onclick = () => {
+            modal.remove();
+            onSelect(choice.value);
+        };
+        box.appendChild(btn);
+    });
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+}
+
+// 反馈提示弹窗（右侧浮窗）
+function showFeedbackModal(message, onClose) {
+    const oldModal = document.getElementById('behavior-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'behavior-modal';
+    modal.style.position = 'fixed';
+    modal.style.right = '40px';
+    modal.style.top = '60px';
+    modal.style.width = '340px';
+    modal.style.maxHeight = '80vh';
+    modal.style.overflowY = 'auto';
+    modal.style.background = 'transparent';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.alignItems = 'flex-end';
+    const box = document.createElement('div');
+    box.style.background = '#fff';
+    box.style.borderRadius = '12px';
+    box.style.padding = '32px 24px';
+    box.style.width = '100%';
+    box.style.boxShadow = '0 8px 32px rgba(0,0,0,0.18)';
+    box.style.textAlign = 'center';
+    box.style.fontSize = '18px';
+    box.textContent = message;
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    setTimeout(() => {
+        modal.remove();
+        if (onClose) onClose();
+    }, 1500);
+}
+
+// 评价题弹窗（右侧浮窗）
+function showEvaluationModal(onSubmit) {
+    const oldModal = document.getElementById('behavior-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'behavior-modal';
+    modal.style.position = 'fixed';
+    modal.style.right = '40px';
+    modal.style.top = '60px';
+    modal.style.width = '340px';
+    modal.style.maxHeight = '80vh';
+    modal.style.overflowY = 'auto';
+    modal.style.background = 'transparent';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.alignItems = 'flex-end';
+    const box = document.createElement('div');
+    box.style.background = '#fff';
+    box.style.borderRadius = '12px';
+    box.style.padding = '32px 24px';
+    box.style.width = '100%';
+    box.style.boxShadow = '0 8px 32px rgba(0,0,0,0.18)';
+    box.style.textAlign = 'center';
+    const title = document.createElement('div');
+    title.style.fontSize = '18px';
+    title.style.fontWeight = 'bold';
+    title.style.marginBottom = '18px';
+    title.textContent = '请根据该界面给您的整体感受，评价您对以下说法的同意程度：';
+    box.appendChild(title);
+    const questions = [
+        '界面上的文字或数字信息（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚做第一个问题的行为的影响很大。',
+        '元素的视觉大小/尺寸，颜色（如一个很大的“抢购”按钮）对我刚刚做第一个问题的行为的影响很大。',
+        '元素的位置（如一个正好在手边的弹窗）对我刚刚做第一个问题的行为的影响很大。'
+    ];
+    const answers = [null, null, null];
+    const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5', '6', '7<br>完全同意'];
+    questions.forEach((q, idx) => {
+        const qDiv = document.createElement('div');
+        qDiv.style.margin = '18px 0 8px 0';
+        qDiv.style.fontSize = '15px';
+        qDiv.style.textAlign = 'left';
+        qDiv.textContent = (idx+1) + '. ' + q;
+        box.appendChild(qDiv);
+        const likert = document.createElement('div');
+        likert.style.display = 'flex';
+        likert.style.justifyContent = 'space-between';
+        likert.style.marginBottom = '8px';
+        likertLabels.forEach((label, val) => {
+            const labelDiv = document.createElement('label');
+            labelDiv.style.display = 'flex';
+            labelDiv.style.flexDirection = 'column';
+            labelDiv.style.alignItems = 'center';
+            labelDiv.style.fontSize = '13px';
+            labelDiv.innerHTML = `<input type="radio" name="eval${idx}" value="${val+1}" style="margin-bottom:4px;">${label}`;
+            likert.appendChild(labelDiv);
+        });
+        box.appendChild(likert);
+    });
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = '提交';
+    submitBtn.style.margin = '18px 0 0 0';
+    submitBtn.style.padding = '10px 32px';
+    submitBtn.style.fontSize = '16px';
+    submitBtn.style.borderRadius = '8px';
+    submitBtn.style.border = '1px solid #3498db';
+    submitBtn.style.background = '#3498db';
+    submitBtn.style.color = '#fff';
+    submitBtn.style.cursor = 'pointer';
+    submitBtn.onclick = () => {
+        for (let i = 0; i < 3; i++) {
+            const checked = box.querySelector(`input[name="eval${i}"]:checked`);
+            if (!checked) {
+                alert('请完成所有评价题');
+                return;
+            }
+            answers[i] = checked.value;
+        }
+        modal.remove();
+        onSubmit(answers);
+    };
+    box.appendChild(submitBtn);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+}
+
+// 组件类型到弹窗内容的映射
+function getBehaviorModalOptions(componentType) {
+    switch(componentType) {
+        case 'coupon_unconditional_unlimited':
+        case 'coupon_unconditional_limited':
+        case 'coupon_conditional_unlimited':
+        case 'coupon_conditional_limited':
+            return {
+                title: '您点击了优惠券，请问您想做的是：',
+                choices: [
+                    { label: '领取优惠券', value: 'accept_offers' },
+                    { label: '关闭弹窗/组件', value: 'avoid' }
+                ]
+            };
+        case 'subscription_social_proof':
+        case 'subscription_benefit':
+            return {
+                title: '您点击了订阅悬浮框，请问您想做的是：',
+                choices: [
+                    { label: '立即关注', value: 'accept_offers' },
+                    { label: '想查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
+                    { label: '关闭弹窗/组件', value: 'avoid' }
+                ]
+            };
+        case 'notification_social_proof':
+        case 'notification_scarcity':
+        case 'notification_price':
+            return {
+                title: '您点击了提示悬浮框，请问您想做的是：',
+                choices: [
+                    { label: '购买该弹窗显示的商品', value: 'convert' },
+                    { label: '想了解该弹窗显示的商品的信息细节', value: 'explore' },
+                    { label: '想查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
+                    { label: '关闭弹窗/组件', value: 'avoid' }
+                ]
+            };
+        case 'popup_scarcity_hijack':
+        case 'popup_value_exchange':
+            return {
+                title: '您点击了商品弹窗，请问您想做的是：',
+                choices: [
+                    { label: '购买该弹窗显示的商品', value: 'convert' },
+                    { label: '想了解该弹窗显示的商品的信息细节', value: 'explore' },
+                    { label: '想查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
+                    { label: '关闭弹窗/组件', value: 'avoid' }
+                ]
+            };
+        case 'shopping_cart':
+            return {
+                title: '您点击了购物车按钮，请问您想做的是：',
+                choices: [
+                    { label: '想浏览商品列表或点进某个商品看细节', value: 'explore' },
+                    { label: '想直接购买商品', value: 'convert' },
+                    { label: '想查找更多信息来判断界面显示信息的准确性，例如查看用户评论、买家秀或商品详情', value: 'verify' }
+                ]
+            };
+        case 'comment':
+            return {
+                title: '您点击了评论按钮，请问您想做的是：',
+                choices: [
+                    { label: '寻求帮助', value: 'ask' }
+                ]
+            };
+        default:
+            return null;
+    }
+}
+
+// 只允许一次点击
+let hasClickedComponent = false;
+
+function handleComponentClick(e) {
+    if (hasClickedComponent) return;
+    const el = e.currentTarget;
+    let componentType = el.classList.contains('fixed-btn') ? el.alt : el.classList[1];
+    // 兼容老组件class
+    if (componentType.startsWith('coupon')) componentType = componentType;
+    if (componentType.startsWith('subscription')) componentType = componentType;
+    if (componentType.startsWith('notification')) componentType = componentType;
+    if (componentType.startsWith('popup')) componentType = componentType;
+    const modalOptions = getBehaviorModalOptions(componentType);
+    if (!modalOptions) return;
+    hasClickedComponent = true;
+    
+    // 记录用户点击的组件类型
+    const clickedComponent = componentType;
+    
+    // 获取组件的位置和尺寸信息
+    const getComponentInfo = async () => {
+        const backgroundDimensions = await getBackgroundImageDimensions();
+        const rect = el.getBoundingClientRect();
+        const containerRect = el.parentElement.getBoundingClientRect();
+        
+        // 计算相对于容器的位置
+        const containerLeft = rect.left - containerRect.left;
+        const containerTop = rect.top - containerRect.top;
+        
+        // 转换为相对于图片的位置
+        const componentLeft = containerLeft - backgroundDimensions.left;
+        const componentTop = containerTop - backgroundDimensions.top;
+        
+        // 计算组件中心点（相对于图片）
+        const componentCenterX = componentLeft + rect.width / 2;
+        const componentCenterY = componentTop + rect.height / 2;
+        
+        // 计算区域（9分）
+        const area = calculateArea(componentCenterX, componentCenterY, backgroundDimensions);
+        
+        return {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            left: Math.round(componentLeft),
+            top: Math.round(componentTop),
+            area: area
+        };
+    };
+    
+    // 如果是comment，直接进入任务2；否则先弹出选择题
+    if (clickedComponent === 'comment') {
+        // comment直接是ask，直接进入任务2
+        renderTask1Feedback();
+        setTimeout(async () => {
+            const componentInfo = await getComponentInfo();
+            renderTask2Evaluation((evalAnswers) => {
+                const trialData = {
+                    trialNumber: currentTrial,
+                    clickedComponent: clickedComponent,
+                    behavior_outcome: 'ask',
+                    component_info: componentInfo,
+                    attribution: {
+                        semantic_cues: evalAnswers[0],
+                        visual_cues_size: evalAnswers[1],
+                        visual_cues_position: evalAnswers[2]
+                    },
+                    submissionTime: new Date().toISOString(),
+                    submissionTimeLocal: new Date().toString()
+                };
+                completeTrial(trialData);
+            });
+        }, 1200);
+    } else {
+        // 其他组件先弹出选择题
+        showBehaviorModal(modalOptions, async (selectedValue) => {
+            // 选择题完成后，显示反馈并进入任务2
+            renderTask1Feedback();
+            setTimeout(async () => {
+                const componentInfo = await getComponentInfo();
+                renderTask2Evaluation((evalAnswers) => {
+                    const trialData = {
+                        trialNumber: currentTrial,
+                        clickedComponent: clickedComponent,
+                        behavior_outcome: selectedValue,
+                        component_info: componentInfo,
+                        attribution: {
+                            semantic_cues: evalAnswers[0],
+                            visual_cues_size: evalAnswers[1],
+                            visual_cues_position: evalAnswers[2]
+                        },
+                        submissionTime: new Date().toISOString(),
+                        submissionTimeLocal: new Date().toString()
+                    };
+                    completeTrial(trialData);
+                });
+            }, 1200);
+        });
+    }
+}
+
+// 完成当前试次
+function completeTrial(trialData) {
+    console.log(`试次 ${currentTrial} 数据:`, trialData);
+    
+    // 存储到总数据数组
+    allTrialsData.push(trialData);
+    
+    if (currentTrial === totalTrials) {
+        // 实验完成，防止重复提交
+        if (experimentCompleted) {
+            console.log('实验已完成，忽略重复提交');
+            return;
+        }
+        experimentCompleted = true;
+        
+        // 立即隐藏主内容，防止用户继续操作
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('progress-indicator').style.display = 'none';
+        
+        // 显示加载提示
+        const survey = document.getElementById('survey-container');
+        survey.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>正在保存数据...</h3></div>';
+        
+        // 提交到Firebase
+        sendDataToFirebase()
+            .then(() => {
+                showThankYouPage();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // 即使保存失败，也显示感谢页面，避免用户重复提交
+                showThankYouPage();
+            });
+    } else {
+        // 继续下一个试次
+        currentTrial++;
+        setTimeout(() => {
+            runTrial(currentTrial);
+        }, 1000);
+    }
+}
+
+// 在右侧问卷区动态渲染内容
+function renderTask1Instruction() {
+    const survey = document.getElementById('survey-container');
+    survey.innerHTML = '';
+    const h2 = document.createElement('h2');
+    h2.textContent = '左侧界面为麦当劳直播间，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)。请对左侧界面进行评价（仅有内容的组件&按钮可被点击）：';
+    survey.appendChild(h2);
+    const task1 = document.createElement('div');
+    task1.id = 'task1-instruction';
+    task1.style.margin = '18px 0 0 0';
+    task1.innerHTML = '<b>您有两个任务。</b><br>任务1：当您第一次看到左侧界面，请直接在左侧界面点击您最想点击的组件。';
+    survey.appendChild(task1);
+}
+
+function renderTask1Feedback() {
+    const survey = document.getElementById('survey-container');
+    // 隐藏任务1说明
+    const task1 = document.getElementById('task1-instruction');
+    if (task1) task1.style.display = 'none';
+    // 显示反馈
+    let feedback = document.getElementById('task1-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.id = 'task1-feedback';
+        feedback.style.margin = '18px 0 0 0';
+        feedback.style.fontWeight = 'bold';
+        feedback.style.color = '#3498db';
+        survey.appendChild(feedback);
+    }
+    feedback.textContent = '您的选择已记录，接下来请完成任务2';
+}
+
+function renderTask2Evaluation(onSubmit) {
+    const survey = document.getElementById('survey-container');
+    // 移除旧的任务2
+    let oldTask2 = document.getElementById('task2-evaluation');
+    if (oldTask2) oldTask2.remove();
+    // 任务2容器
+    const task2 = document.createElement('div');
+    task2.id = 'task2-evaluation';
+    task2.style.margin = '24px 0 0 0';
+    task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-7 完全不同意-完全同意）：';
+    const questions = [
+        '界面上的文字或数字信息（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚做出首次点击的影响很大。',
+        '元素的视觉大小/尺寸和颜色对我刚刚做出首次点击的影响很大。',
+        '元素的位置对我刚刚做出首次点击的影响很大。'
+    ];
+    const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5', '6', '7<br>完全同意'];
+    questions.forEach((q, idx) => {
+        const qDiv = document.createElement('div');
+        qDiv.style.margin = '18px 0 8px 0';
+        qDiv.style.fontSize = '15px';
+        qDiv.style.textAlign = 'left';
+        qDiv.textContent = (idx+1) + '. ' + q;
+        task2.appendChild(qDiv);
+        const likert = document.createElement('div');
+        likert.style.display = 'flex';
+        likert.style.justifyContent = 'space-between';
+        likert.style.marginBottom = '8px';
+        likertLabels.forEach((label, val) => {
+            const labelDiv = document.createElement('label');
+            labelDiv.style.display = 'flex';
+            labelDiv.style.flexDirection = 'column';
+            labelDiv.style.alignItems = 'center';
+            labelDiv.style.fontSize = '13px';
+            labelDiv.innerHTML = `<input type="radio" name="eval${idx}" value="${val+1}" style="margin-bottom:4px;">${label}`;
+            likert.appendChild(labelDiv);
+        });
+        task2.appendChild(likert);
+    });
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = '提交';
+    submitBtn.style.margin = '18px 0 0 0';
+    submitBtn.style.padding = '10px 32px';
+    submitBtn.style.fontSize = '16px';
+    submitBtn.style.borderRadius = '8px';
+    submitBtn.style.border = '1px solid #3498db';
+    submitBtn.style.background = '#3498db';
+    submitBtn.style.color = '#fff';
+    submitBtn.style.cursor = 'pointer';
+    submitBtn.onclick = () => {
+        const answers = [];
+        for (let i = 0; i < 3; i++) {
+            const checked = task2.querySelector(`input[name="eval${i}"]:checked`);
+            if (!checked) {
+                alert('请完成所有评价题');
+                return;
+            }
+            answers[i] = checked.value;
+        }
+        onSubmit(answers);
+    };
+    task2.appendChild(submitBtn);
+    survey.appendChild(task2);
+}
