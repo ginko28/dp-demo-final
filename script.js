@@ -1255,12 +1255,12 @@ function renderTask1Instruction() {
     const survey = document.getElementById('survey-container');
     survey.innerHTML = '';
     const h2 = document.createElement('h2');
-    h2.textContent = '左侧界面为麦当劳直播间，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)。请对左侧界面进行评价（仅有内容的组件&按钮可被点击）：';
+    h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)。';
     survey.appendChild(h2);
     const task1 = document.createElement('div');
     task1.id = 'task1-instruction';
     task1.style.margin = '18px 0 0 0';
-    task1.innerHTML = '<b>您有两个任务。</b><br>任务1：当您第一次看到左侧界面，请直接在左侧界面点击您最想点击的组件。';
+    task1.innerHTML = '<b>您有两个任务。</b><br>任务1：当您第一次看到界面时，请直接在界面点击您最想点击的组件（仅有内容的组件&按钮可被点击）。';
     survey.appendChild(task1);
 }
 
@@ -1293,9 +1293,9 @@ function renderTask2Evaluation(onSubmit) {
     task2.style.margin = '24px 0 0 0';
     task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-7 完全不同意-完全同意）：';
     const questions = [
-        '界面上的文字或数字信息（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚做出首次点击的影响很大。',
-        '元素的视觉大小/尺寸和颜色对我刚刚做出首次点击的影响很大。',
-        '元素的位置对我刚刚做出首次点击的影响很大。'
+        '界面上的文字或数字信息（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚首次点击行为的影响很大。',
+        '元素的视觉大小/尺寸和颜色对我刚刚首次点击行为的影响很大。',
+        '元素的位置对我刚刚首次点击行为的影响很大。'
     ];
     const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5', '6', '7<br>完全同意'];
     questions.forEach((q, idx) => {
