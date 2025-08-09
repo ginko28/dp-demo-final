@@ -142,6 +142,14 @@ function getRandomChoice(array) {
     return array[Math.floor(Math.random() * array.length)];
 }
 
+// 仅用于判定移动端（不影响桌面端逻辑）
+function isMobileDevice() {
+    const byWidth = typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 768;
+    const byTouch = typeof navigator !== 'undefined' && (navigator.maxTouchPoints || 0) > 0;
+    const byUA = typeof navigator !== 'undefined' && /Mobile|Android|iP(hone|od|ad)|IEMobile|BlackBerry|Opera Mini/i.test(navigator.userAgent);
+    return byWidth || byTouch || byUA;
+}
+
 // 获取底图实际显示区域
 function getBackgroundImageDimensions() {
     const container = document.querySelector('.livestream-background');
@@ -189,8 +197,8 @@ function getBackgroundImageDimensions() {
 // 修改组件间的最小距离
 function isPositionOverlapping(newPos, existingPositions) {
     for (let pos of existingPositions) {
-        // 减小最小间距，让组件可以分布得更开
-        const minDistance = 50; // 从100减小到50
+        // 移动端进一步减小最小间距，让组件更容易分散
+        const minDistance = isMobileDevice() ? 30 : 50;
 
         const centerDistance = Math.sqrt(
             Math.pow((newPos.left + newPos.width / 2) - (pos.left + pos.width / 2), 2) +
@@ -207,7 +215,7 @@ function isPositionOverlapping(newPos, existingPositions) {
 // 修改随机位置生成逻辑，使用区域分割方法
 async function generateRandomPosition(containerWidth, containerHeight, elementType) {
     const backgroundDimensions = await getBackgroundImageDimensions();
-    const margin = 20; // 减小边距，确保元素更贴近图片边界
+    const margin = isMobileDevice() ? 10 : 20; // 移动端更小边距，仅影响移动端
 
     // 获取元素类型的尺寸配置
     const sizeConfig = elementTypes[elementType].sizeConfig;
@@ -242,9 +250,21 @@ async function generateRandomPosition(containerWidth, containerHeight, elementTy
         };
     }
 
-    // 在图片内部随机选择位置
-    const randomX = Math.random() * availableWidth;
-    const randomY = Math.random() * availableHeight;
+    // 在图片内部随机选择位置（移动端采用九宫格分区采样，桌面端保持原逻辑）
+    let randomX, randomY;
+    if (isMobileDevice()) {
+        const gridCols = 3;
+        const gridRows = 3;
+        const cellW = availableWidth / gridCols;
+        const cellH = availableHeight / gridRows;
+        const gx = Math.floor(Math.random() * gridCols);
+        const gy = Math.floor(Math.random() * gridRows);
+        randomX = gx * cellW + Math.random() * cellW;
+        randomY = gy * cellH + Math.random() * cellH;
+    } else {
+        randomX = Math.random() * availableWidth;
+        randomY = Math.random() * availableHeight;
+    }
 
     // 确保位置在图片边界内
     const finalLeft = Math.round(imageLeft + margin + randomX);
