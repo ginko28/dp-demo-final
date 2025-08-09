@@ -9,8 +9,47 @@
 </head>
 
 <body>
+    <!-- 知情同意书页面 -->
+    <div id="consent-page" class="consent-page">
+        <div class="consent-content">
+            <h2>知情同意书</h2>
+            <div class="consent-text">
+                <p><strong>研究标题：</strong>直播电商界面设计对用户行为影响的研究</p>
+                
+                <p><strong>研究目的：</strong>本研究旨在了解直播电商界面中不同设计元素对用户行为决策的影响，以优化用户体验和界面设计。</p>
+                
+                <p><strong>参与内容：</strong>您将观看一系列直播电商界面设计，并回答相关的问卷问题。整个过程大约需要10分钟。</p>
+                
+                <p><strong>隐私保护：</strong></p>
+                <ul>
+                    <li>您的个人信息将被严格保密</li>
+                    <li>收集的数据仅用于学术研究目的</li>
+                    <li>不会收集任何能够识别您身份的个人信息</li>
+                    <li>研究结果将以匿名形式发表</li>
+                </ul>
+                
+                <p><strong>自愿参与：</strong>您的参与完全自愿，您可以随时退出研究而不会受到任何不利影响。</p>
+                
+                <p><strong>风险与收益：</strong>本研究不会对您造成任何身体或心理风险。您的参与将有助于改善直播电商的用户体验。</p>
+                
+                <p><strong>联系方式：</strong>如果您对本研究有任何疑问，请联系研究负责人yqin457@connect.hkust-gz.edu.cn。</p>
+            </div>
+            
+            <form id="consent-form">
+                <div class="consent-checkbox">
+                    <label>
+                        <input type="checkbox" id="consent-agree" required>
+                        <span class="checkmark"></span>
+                        我已仔细阅读并理解上述内容，我自愿参与本研究
+                    </label>
+                </div>
+                <button type="submit" class="submit-btn" disabled>同意并继续</button>
+            </form>
+        </div>
+    </div>
+
     <!-- 开场问卷页面 -->
-    <div id="intro-survey" class="intro-survey">
+    <div id="intro-survey" class="intro-survey" style="display: none;">
         <div class="intro-content">
             <h2>您好，感谢参与本次研究</h2>
             <p class="intro-text">在开始浏览具体的直播间设计之前，我们想先简单了解一下您对本次直播内容"麦当劳"的总体看法。请根据您的真实感受回答以下问题。</p>
@@ -151,7 +190,7 @@
         <div class="thank-you-content">
             <h2>🎉 实验完成！</h2>
             <p>感谢您参与本次HCI研究实验！</p>
-            <p>您已经完成了所有8个试次的测试。</p>
+            <p>您已经完成了所有20个试次的测试。</p>
             <p>您的数据已被记录</p>
         </div>
     </div>

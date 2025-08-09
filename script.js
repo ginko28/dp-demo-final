@@ -3,8 +3,44 @@ let currentTrial = 1;
 const totalTrials = 20;
 let allTrialsData = [];
 let introSurveyData = null;
+let consentData = null;
 let isSubmitting = false; // 添加提交状态标志
 let experimentCompleted = false; // 添加实验完成标志，防止重复提交
+
+// Consent页面处理
+document.addEventListener('DOMContentLoaded', function() {
+    const consentCheckbox = document.getElementById('consent-agree');
+    const consentSubmitBtn = document.querySelector('#consent-form .submit-btn');
+    const consentForm = document.getElementById('consent-form');
+    
+    // 监听checkbox变化
+    if (consentCheckbox) {
+        consentCheckbox.addEventListener('change', function() {
+            consentSubmitBtn.disabled = !this.checked;
+        });
+    }
+    
+    // 处理consent表单提交
+    if (consentForm) {
+        consentForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            if (consentCheckbox.checked) {
+                // 记录用户的consent点击
+                consentData = {
+                    consentGiven: true,
+                    clickedAt: new Date().toISOString(),
+                    clickedAtLocal: new Date().toString(),
+                    userAgent: navigator.userAgent,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                // 隐藏consent页面，显示开场问卷
+                document.getElementById('consent-page').style.display = 'none';
+                document.getElementById('intro-survey').style.display = 'flex';
+            }
+        });
+    }
+});
 
 // 四种元素类型配置
 const elementTypes = {
@@ -636,6 +672,7 @@ function calculateArea(x, y, backgroundDimensions) {
 // 保存实验数据
 function downloadExperimentData() {
     const experimentData = {
+        consent: consentData,
         introSurvey: introSurveyData,
         trials: allTrialsData
     };
@@ -657,6 +694,7 @@ function downloadExperimentData() {
 function sendDataToFirebase() {
     return new Promise((resolve, reject) => {
         const experimentData = {
+            consent: consentData,
             introSurvey: introSurveyData,
             trials: allTrialsData,
             userAgent: navigator.userAgent,
@@ -821,6 +859,39 @@ async function handleIntroSubmit(event) {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // Consent页面处理
+    const consentCheckbox = document.getElementById('consent-agree');
+    const consentSubmitBtn = document.querySelector('#consent-form .submit-btn');
+    const consentForm = document.getElementById('consent-form');
+    
+    // 监听checkbox变化
+    if (consentCheckbox) {
+        consentCheckbox.addEventListener('change', function() {
+            consentSubmitBtn.disabled = !this.checked;
+        });
+    }
+    
+    // 处理consent表单提交
+    if (consentForm) {
+        consentForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            if (consentCheckbox.checked) {
+                // 记录用户的consent点击
+                consentData = {
+                    consentGiven: true,
+                    clickedAt: new Date().toISOString(),
+                    clickedAtLocal: new Date().toString(),
+                    userAgent: navigator.userAgent,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                // 隐藏consent页面，显示开场问卷
+                document.getElementById('consent-page').style.display = 'none';
+                document.getElementById('intro-survey').style.display = 'flex';
+            }
+        });
+    }
+    
     // 绑定开场问卷提交事件
     const introForm = document.getElementById('intro-form');
     introForm.addEventListener('submit', handleIntroSubmit);
@@ -1255,12 +1326,12 @@ function renderTask1Instruction() {
     const survey = document.getElementById('survey-container');
     survey.innerHTML = '';
     const h2 = document.createElement('h2');
-    h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)。';
+    h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)，每张图片您将完成两个任务';
     survey.appendChild(h2);
     const task1 = document.createElement('div');
     task1.id = 'task1-instruction';
     task1.style.margin = '18px 0 0 0';
-    task1.innerHTML = '<b>您有两个任务。</b><br>任务1：当您第一次看到界面时，请直接在界面点击您最想点击的组件（仅有内容的组件&按钮可被点击）。';
+    task1.innerHTML = '<b>您有两个任务。</b><br>任务1：当您第一次看到界面时，请在界面点击您最想点击/最关注的组件（仅组件&按钮可被点击）。';
     survey.appendChild(task1);
 }
 
@@ -1293,9 +1364,9 @@ function renderTask2Evaluation(onSubmit) {
     task2.style.margin = '24px 0 0 0';
     task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-7 完全不同意-完全同意）：';
     const questions = [
-        '界面上的文字或数字信息（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚首次点击行为的影响很大。',
-        '元素的视觉大小/尺寸和颜色对我刚刚首次点击行为的影响很大。',
-        '元素的位置对我刚刚首次点击行为的影响很大。'
+        '界面上的<b>文字或数字信息</b>（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚首次点击行为的影响很大。',
+        '元素的<b>视觉大小/尺寸</b>和<b>颜色</b>对我刚刚首次点击行为的影响很大。',
+        '元素的<b>位置</b>对我刚刚首次点击行为的影响很大。'
     ];
     const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5', '6', '7<br>完全同意'];
     questions.forEach((q, idx) => {
@@ -1303,7 +1374,7 @@ function renderTask2Evaluation(onSubmit) {
         qDiv.style.margin = '18px 0 8px 0';
         qDiv.style.fontSize = '15px';
         qDiv.style.textAlign = 'left';
-        qDiv.textContent = (idx+1) + '. ' + q;
+        qDiv.innerHTML = (idx + 1) + '. ' + q;
         task2.appendChild(qDiv);
         const likert = document.createElement('div');
         likert.style.display = 'flex';
