@@ -603,6 +603,18 @@ async function handleFormSubmit(event) {
             trialNumber: currentTrial,
             components: componentsData,
             survey_responses: surveyData,
+            // 出现的全部组件（名称列表）
+            appeared_components: (() => {
+                const presentFromState = (window.currentTrialState
+                    ? Object.values(window.currentTrialState).filter(c => c && c.present).map(c => c.type)
+                    : []);
+                const extras = [];
+                if (container.querySelector('.comment-btn')) extras.push('comment');
+                if (container.querySelector('.cart-btn')) extras.push('shopping_cart');
+                return Array.from(new Set([...presentFromState, ...extras]));
+            })(),
+            // 完整生成状态（包含未出现的组件 present=false）
+            generated_state: window.currentTrialState || null,
             submissionTime: new Date().toISOString(),
             submissionTimeLocal: new Date().toString() // 添加本地时间
         };
@@ -751,6 +763,8 @@ async function runTrial(trialNumber) {
 
     // 生成随机界面状态
     const generatedState = await generateTrialState();
+    // 保存当前试次生成状态，便于提交时记录出现的全部组件
+    window.currentTrialState = generatedState;
 
     // 打印当前出现的组件信息
     console.log('\n当前出现的组件:');
