@@ -620,17 +620,19 @@ async function handleFormSubmit(event) {
 
             allTrialsData = allTrialsData.slice(0, totalTrials);
 
-            sendDataToFirebase()
+            Promise.race([
+                sendDataToFirebase(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('上传超时')), 12000))
+            ])
                 .then(() => {
                     submitButton.textContent = '保存成功！';
-                    setTimeout(showThankYouPage, 1000);
+                    setTimeout(showThankYouPage, 800);
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    submitButton.textContent = '保存失败，请重试';
-                    // 重置提交状态，允许重试
-                    isSubmitting = false;
-                    submitButton.disabled = false;
+                    console.error('上传失败或超时:', error);
+                    submitButton.textContent = '保存失败，正在保存本地备份...';
+                    try { downloadExperimentData(); } catch (e) { console.error('本地备份失败', e); }
+                    setTimeout(showThankYouPage, 1000);
                 });
         } else {
             // 继续下一个试次
@@ -914,7 +916,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 重置试次计数和数据数组
     currentTrial = 1;
     allTrialsData = [];
-    totalTrials = 20; // 确保这个值是20
     isSubmitting = false; // 重置提交状态
     experimentCompleted = false; // 重置实验完成状态
 

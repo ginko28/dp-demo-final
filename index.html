@@ -206,6 +206,20 @@
         };
         // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
+        // 移动端网络环境兼容：启用长轮询避免某些浏览器阻断 websockets
+        if (firebase && firebase.firestore) {
+            try {
+                // v9+ 常见；有些 v8 环境也可用
+                firebase.firestore().settings({ experimentalAutoDetectLongPolling: true });
+            } catch (e1) {
+                try {
+                    // v8 兼容
+                    firebase.firestore().settings({ experimentalForceLongPolling: true });
+                } catch (e2) {
+                    console.warn('Firestore 长轮询设置失败（可忽略）：', e1, e2);
+                }
+            }
+        }
     </script>
 
 
