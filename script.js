@@ -1339,11 +1339,12 @@ function renderTask1Instruction() {
     survey.innerHTML = '';
     const h2 = document.createElement('h2');
     h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)，每张图片您将完成两个任务';
+    h2.style.fontSize = 'inherit';
     survey.appendChild(h2);
     const task1 = document.createElement('div');
     task1.id = 'task1-instruction';
     task1.style.margin = '18px 0 0 0';
-    task1.innerHTML = '<b>您有两个任务。</b><br>任务1：当您第一次看到界面时，请在界面点击您最想点击/最关注的组件（仅组件&按钮可被点击）。';
+    task1.innerHTML = '<br><b>任务1：</b>当您第一次看到界面时，请<strong>在界面点击</strong>您最想点击/最关注的组件（仅组件&按钮可被点击）。';
     survey.appendChild(task1);
 }
 
