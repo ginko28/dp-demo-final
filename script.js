@@ -1142,8 +1142,8 @@ function getBehaviorModalOptions(componentType) {
             return {
                 title: '您点击了订阅悬浮框，请问您想做的是：',
                 choices: [
-                    { label: '立即关注', value: 'accept_offers' },
-                    { label: '想查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
+                    { label: '立即关注该主播', value: 'accept_offers' },
+                    { label: '查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
                     { label: '关闭弹窗/组件', value: 'avoid' }
                 ]
             };
@@ -1154,8 +1154,8 @@ function getBehaviorModalOptions(componentType) {
                 title: '您点击了提示悬浮框，请问您想做的是：',
                 choices: [
                     { label: '购买该弹窗显示的商品', value: 'convert' },
-                    { label: '想了解该弹窗显示的商品的信息细节', value: 'explore' },
-                    { label: '想查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
+                    { label: '了解该弹窗显示的商品的信息细节', value: 'explore' },
+                    { label: '查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
                     { label: '关闭弹窗/组件', value: 'avoid' }
                 ]
             };
@@ -1165,8 +1165,8 @@ function getBehaviorModalOptions(componentType) {
                 title: '您点击了商品弹窗，请问您想做的是：',
                 choices: [
                     { label: '购买该弹窗显示的商品', value: 'convert' },
-                    { label: '想了解该弹窗显示的商品的信息细节', value: 'explore' },
-                    { label: '想查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
+                    { label: '了解该弹窗显示的商品的信息细节', value: 'explore' },
+                    { label: '查找更多信息来判断该弹窗信息内容是否准确', value: 'verify' },
                     { label: '关闭弹窗/组件', value: 'avoid' }
                 ]
             };
@@ -1174,9 +1174,9 @@ function getBehaviorModalOptions(componentType) {
             return {
                 title: '您点击了购物车按钮，请问您想做的是：',
                 choices: [
-                    { label: '想浏览商品列表或点进某个商品看细节', value: 'explore' },
-                    { label: '想直接购买商品', value: 'convert' },
-                    { label: '想查找更多信息来判断界面显示信息的准确性，例如查看用户评论、买家秀或商品详情', value: 'verify' }
+                    { label: '浏览商品列表或点进某个商品看细节', value: 'explore' },
+                    { label: '直接购买商品', value: 'convert' },
+                    { label: '查找更多信息来判断界面显示信息的准确性，例如查看用户评论、买家秀或商品详情', value: 'verify' }
                 ]
             };
         case 'comment':
@@ -1338,7 +1338,7 @@ function renderTask1Instruction() {
     const survey = document.getElementById('survey-container');
     survey.innerHTML = '';
     const h2 = document.createElement('h2');
-    h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)，每张图片您将完成两个任务';
+    h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)，每张图片您将完成两个任务：';
     h2.style.fontSize = 'inherit';
     survey.appendChild(h2);
     const task1 = document.createElement('div');
