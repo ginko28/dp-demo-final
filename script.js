@@ -4,6 +4,7 @@ const totalTrials = 20;
 let allTrialsData = [];
 let introSurveyData = null;
 let consentData = null;
+let userId = null; // 每位参与者的唯一ID
 // 记录实验从页面打开开始的时间
 const experimentStartTimestamp = Date.now();
 const experimentStartAt = new Date().toISOString();
@@ -13,6 +14,23 @@ let experimentCompleted = false; // 添加实验完成标志，防止重复提�
 
 // Consent页面处理
 document.addEventListener('DOMContentLoaded', function() {
+    // 初始化/持久化用户ID
+    try {
+        const saved = localStorage.getItem('hci_user_id');
+        if (saved && typeof saved === 'string' && saved.length > 0) {
+            userId = saved;
+        } else {
+            // 简单易记：6位数字ID
+            const num = Math.floor(100000 + Math.random() * 900000).toString();
+            userId = num;
+            localStorage.setItem('hci_user_id', userId);
+        }
+    } catch (e) {
+        // 兜底：即便 localStorage 不可用也能生成一次性 6 位数字ID
+        const num = Math.floor(100000 + Math.random() * 900000).toString();
+        userId = num;
+    }
+
     const consentCheckbox = document.getElementById('consent-agree');
     const consentSubmitBtn = document.querySelector('#consent-form .submit-btn');
     const consentForm = document.getElementById('consent-form');
@@ -687,6 +705,41 @@ function calculateArea(x, y, backgroundDimensions) {
     return areaX + areaY;
 }
 
+// 收集当前界面中所有已出现组件的位置信息（相对于图片坐标系）
+async function collectAllComponentsData() {
+    const container = document.querySelector('.livestream-background');
+    const components = container.querySelectorAll('.livestream-element');
+    const backgroundDimensions = await getBackgroundImageDimensions();
+
+    const componentsData = Array.from(components).map(component => {
+        const containerLeft = parseInt(component.style.left);
+        const containerTop = parseInt(component.style.top);
+        const componentWidth = parseInt(component.style.width);
+        const componentHeight = parseInt(component.style.height);
+
+        const componentLeft = containerLeft - backgroundDimensions.left;
+        const componentTop = containerTop - backgroundDimensions.top;
+
+        const componentCenterX = componentLeft + componentWidth / 2;
+        const componentCenterY = componentTop + componentHeight / 2;
+
+        const area = calculateArea(componentCenterX, componentCenterY, backgroundDimensions);
+
+        return {
+            type: component.alt,
+            position: {
+                left: Math.round(componentLeft),
+                top: Math.round(componentTop),
+                width: componentWidth,
+                height: componentHeight,
+                area: area
+            }
+        };
+    });
+
+    return componentsData;
+}
+
 // 保存实验数据
 function downloadExperimentData() {
     const experimentData = {
@@ -694,6 +747,7 @@ function downloadExperimentData() {
         experimentStartAtLocal,
         durationMs: Date.now() - experimentStartTimestamp,
         durationSeconds: Math.round((Date.now() - experimentStartTimestamp) / 1000),
+        userId,
         consent: consentData,
         introSurvey: introSurveyData,
         trials: allTrialsData
@@ -715,14 +769,23 @@ function downloadExperimentData() {
 // 新增：发送数据到 Firebase 的函数
 function sendDataToFirebase() {
     return new Promise((resolve, reject) => {
+        // 仅向数据库上传时去除每个 trial 的 generated_state 字段
+        const sanitizedTrials = Array.isArray(allTrialsData)
+            ? allTrialsData.map(t => {
+                const { generated_state, ...rest } = t || {};
+                return rest;
+            })
+            : [];
+
         const experimentData = {
             experimentStartAt,
             experimentStartAtLocal,
             durationMs: Date.now() - experimentStartTimestamp,
             durationSeconds: Math.round((Date.now() - experimentStartTimestamp) / 1000),
+            userId,
             consent: consentData,
             introSurvey: introSurveyData,
-            trials: allTrialsData,
+            trials: sanitizedTrials,
             userAgent: navigator.userAgent,
             completedAt: new Date().toISOString(),
             completedAtLocal: new Date().toString(), // 添加本地时间
@@ -1261,12 +1324,27 @@ function handleComponentClick(e) {
         renderTask1Feedback();
         setTimeout(async () => {
             const componentInfo = await getComponentInfo();
-            renderTask2Evaluation((evalAnswers) => {
+            renderTask2Evaluation(async (evalAnswers) => {
+                const allComponentsData = await collectAllComponentsData();
+                const appearedComponents = (() => {
+                    const presentFromState = (window.currentTrialState
+                        ? Object.values(window.currentTrialState).filter(c => c && c.present).map(c => c.type)
+                        : []);
+                    const extras = [];
+                    const container = document.querySelector('.livestream-background');
+                    if (container.querySelector('.comment-btn')) extras.push('comment');
+                    if (container.querySelector('.cart-btn')) extras.push('shopping_cart');
+                    return Array.from(new Set([...presentFromState, ...extras]));
+                })();
+
                 const trialData = {
                     trialNumber: currentTrial,
                     clickedComponent: clickedComponent,
                     behavior_outcome: 'ask',
                     component_info: componentInfo,
+                    components: allComponentsData,
+                    appeared_components: appearedComponents,
+                    generated_state: window.currentTrialState || null,
                     attribution: {
                         semantic_cues: evalAnswers[0],
                         visual_cues_size: evalAnswers[1],
@@ -1285,12 +1363,27 @@ function handleComponentClick(e) {
             renderTask1Feedback();
             setTimeout(async () => {
                 const componentInfo = await getComponentInfo();
-                renderTask2Evaluation((evalAnswers) => {
+                renderTask2Evaluation(async (evalAnswers) => {
+                    const allComponentsData = await collectAllComponentsData();
+                    const appearedComponents = (() => {
+                        const presentFromState = (window.currentTrialState
+                            ? Object.values(window.currentTrialState).filter(c => c && c.present).map(c => c.type)
+                            : []);
+                        const extras = [];
+                        const container = document.querySelector('.livestream-background');
+                        if (container.querySelector('.comment-btn')) extras.push('comment');
+                        if (container.querySelector('.cart-btn')) extras.push('shopping_cart');
+                        return Array.from(new Set([...presentFromState, ...extras]));
+                    })();
+
                     const trialData = {
                         trialNumber: currentTrial,
                         clickedComponent: clickedComponent,
                         behavior_outcome: selectedValue,
                         component_info: componentInfo,
+                        components: allComponentsData,
+                        appeared_components: appearedComponents,
+                        generated_state: window.currentTrialState || null,
                         attribution: {
                             semantic_cues: evalAnswers[0],
                             visual_cues_size: evalAnswers[1],
@@ -1353,7 +1446,7 @@ function renderTask1Instruction() {
     const survey = document.getElementById('survey-container');
     survey.innerHTML = '';
     const h2 = document.createElement('h2');
-    h2.textContent = '您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)，每张图片您将完成两个任务：';
+    h2.innerHTML = `您将看到20组麦当劳直播间界面，界面由一些小组件构成(如优惠券，信息框，商品弹窗，评论框，商品列表按钮等)，每张图片您将完成两个任务。您的ID是 <b>${userId || ''}</b>。`
     h2.style.fontSize = 'inherit';
     survey.appendChild(h2);
     const task1 = document.createElement('div');
