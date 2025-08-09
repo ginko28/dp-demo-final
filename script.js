@@ -4,6 +4,10 @@ const totalTrials = 20;
 let allTrialsData = [];
 let introSurveyData = null;
 let consentData = null;
+// 记录实验从页面打开开始的时间
+const experimentStartTimestamp = Date.now();
+const experimentStartAt = new Date().toISOString();
+const experimentStartAtLocal = new Date().toString();
 let isSubmitting = false; // 添加提交状态标志
 let experimentCompleted = false; // 添加实验完成标志，防止重复提交
 
@@ -672,6 +676,10 @@ function calculateArea(x, y, backgroundDimensions) {
 // 保存实验数据
 function downloadExperimentData() {
     const experimentData = {
+        experimentStartAt,
+        experimentStartAtLocal,
+        durationMs: Date.now() - experimentStartTimestamp,
+        durationSeconds: Math.round((Date.now() - experimentStartTimestamp) / 1000),
         consent: consentData,
         introSurvey: introSurveyData,
         trials: allTrialsData
@@ -694,6 +702,10 @@ function downloadExperimentData() {
 function sendDataToFirebase() {
     return new Promise((resolve, reject) => {
         const experimentData = {
+            experimentStartAt,
+            experimentStartAtLocal,
+            durationMs: Date.now() - experimentStartTimestamp,
+            durationSeconds: Math.round((Date.now() - experimentStartTimestamp) / 1000),
             consent: consentData,
             introSurvey: introSurveyData,
             trials: allTrialsData,
