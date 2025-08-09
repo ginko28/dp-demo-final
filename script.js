@@ -1362,13 +1362,13 @@ function renderTask2Evaluation(onSubmit) {
     const task2 = document.createElement('div');
     task2.id = 'task2-evaluation';
     task2.style.margin = '24px 0 0 0';
-    task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-7 完全不同意-完全同意）：';
+    task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-5 完全不同意-完全同意）：';
     const questions = [
         '界面上的<b>文字或数字信息</b>（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚首次点击行为的影响很大。',
         '元素的<b>视觉大小/尺寸</b>和<b>颜色</b>对我刚刚首次点击行为的影响很大。',
         '元素的<b>位置</b>对我刚刚首次点击行为的影响很大。'
     ];
-    const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5', '6', '7<br>完全同意'];
+    const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5<br>完全同意'];
     questions.forEach((q, idx) => {
         const qDiv = document.createElement('div');
         qDiv.style.margin = '18px 0 8px 0';
