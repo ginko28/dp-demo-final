@@ -1,6 +1,6 @@
 // 全局变量
 let currentTrial = 1;
-const totalTrials = 3;
+const totalTrials = 20;
 let allTrialsData = [];
 let introSurveyData = null;
 let consentData = null;
