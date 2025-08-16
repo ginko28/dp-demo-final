@@ -11,6 +11,23 @@ const experimentStartAt = new Date().toISOString();
 const experimentStartAtLocal = new Date().toString();
 let isSubmitting = false; // 添加提交状态标志
 let experimentCompleted = false; // 添加实验完成标志，防止重复提交
+// 汇总：每个试次所有类型组件的出现矩阵及细分数据
+const aggregatedPresenceList = [];
+
+// 全部组件类型列表（含固定按钮）
+const ALL_COMPONENT_TYPES = [
+    'coupon_unconditional_limited',
+    'coupon_conditional_unlimited',
+    'subscription_social_proof',
+    'subscription_benefit',
+    'notification_social_proof',
+    'notification_scarcity',
+    'notification_price',
+    'popup_scarcity_hijack',
+    'popup_value_exchange',
+    'comment',
+    'shopping_cart'
+];
 
 // Consent页面处理
 document.addEventListener('DOMContentLoaded', function() {
@@ -69,10 +86,8 @@ const elementTypes = {
     coupon: {
         name: '优惠券',
         variants: [
-            'coupon_unconditional_unlimited',
             'coupon_unconditional_limited',
-            'coupon_conditional_unlimited',
-            'coupon_conditional_limited'
+            'coupon_conditional_unlimited'
         ],
         appearanceProbability: 0.5, // 50% 概率出现
         sizeConfig: {
@@ -496,7 +511,7 @@ function generateLivestreamElements() {
 
     // 定义所有组件及其变种
     const elements = [
-        { name: 'coupon', variants: ['unconditional_unlimited', 'unconditional_limited', 'conditional_unlimited', 'conditional_limited'] },
+        { name: 'coupon', variants: ['unconditional_limited', 'conditional_unlimited'] },
         { name: 'subscription', variants: ['social_proof', 'benefit'] },
         { name: 'notification', variants: ['social_proof', 'scarcity', 'price'] },
         { name: 'popup', variants: ['scarcity_hijack', 'value_exchange'] }
@@ -596,6 +611,7 @@ async function handleFormSubmit(event) {
         const components = container.querySelectorAll('.livestream-element');
         const backgroundDimensions = await getBackgroundImageDimensions();
 
+        const clickedType = (typeof trialData !== 'undefined' && trialData && trialData.clickedComponent) ? trialData.clickedComponent : (window.lastClickedComponent || null);
         const componentsData = Array.from(components).map(component => {
             // 元素位置现在是相对于容器的，需要转换为相对于图片的
             const containerLeft = parseInt(component.style.left);
@@ -612,6 +628,7 @@ async function handleFormSubmit(event) {
             const componentCenterY = componentTop + componentHeight / 2;
             
             const area = calculateArea(componentCenterX, componentCenterY, backgroundDimensions);
+            const areaRatio = (componentWidth * componentHeight) / (backgroundDimensions.width * backgroundDimensions.height);
             
             // 添加调试信息
             console.log(`组件 ${component.alt} 区域计算:`, {
@@ -625,13 +642,17 @@ async function handleFormSubmit(event) {
             });
             
             return {
-                type: component.alt,
+                semantic_strategy: getSemanticStrategyForType(component.alt),
+                clicked: (component.alt === clickedType) ? 1 : 0,
                 position: {
                     left: Math.round(componentLeft),
                     top: Math.round(componentTop),
                     width: componentWidth,
                     height: componentHeight,
-                    area: area
+                    area: area,
+                    centerX: Math.round(componentCenterX),
+                    centerY: Math.round(componentCenterY),
+                    area_ratio: Number.isFinite(areaRatio) ? Number(areaRatio.toFixed(4)) : 0
                 }
             };
         });
@@ -725,12 +746,38 @@ function calculateArea(x, y, backgroundDimensions) {
     return areaX + areaY;
 }
 
+// 根据具体变体推导归一化的组件名称
+function getComponentCategoryName(componentType) {
+    if (!componentType || typeof componentType !== 'string') return null;
+    if (componentType.startsWith('coupon')) return 'coupon';
+    if (componentType.startsWith('subscription')) return 'subscription';
+    if (componentType.startsWith('notification')) return 'notification';
+    if (componentType.startsWith('popup')) return 'popup';
+    return null;
+}
+
+// 组件变体到语义策略的映射
+function getSemanticStrategyForType(componentType) {
+    const mapping = {
+        'coupon_conditional_unlimited': 'forced_subscription',
+        'coupon_unconditional_limited': 'fake_urgency',
+        'subscription_benefit': 'forced_subscription',
+        'subscription_social_proof': 'fake_social_proof',
+        'notification_price': 'fake_urgency',
+        'notification_scarcity': 'fake_scarcity',
+        'notification_social_proof': 'fake_social_proof',
+        'popup_scarcity_hijack': 'fake_urgency',
+        'popup_value_exchange': 'forced_subscription'
+    };
+    return mapping[componentType] || null;
+}
 // 收集当前界面中所有已出现组件的位置信息（相对于图片坐标系）
 async function collectAllComponentsData() {
     const container = document.querySelector('.livestream-background');
     const components = container.querySelectorAll('.livestream-element');
     const backgroundDimensions = await getBackgroundImageDimensions();
 
+    const lastClicked = (window && window.lastClickedComponent) ? window.lastClickedComponent : null;
     const componentsData = Array.from(components).map(component => {
         const containerLeft = parseInt(component.style.left);
         const containerTop = parseInt(component.style.top);
@@ -744,15 +791,20 @@ async function collectAllComponentsData() {
         const componentCenterY = componentTop + componentHeight / 2;
 
         const area = calculateArea(componentCenterX, componentCenterY, backgroundDimensions);
+        const areaRatio = (componentWidth * componentHeight) / (backgroundDimensions.width * backgroundDimensions.height);
 
         return {
-            type: component.alt,
+            semantic_strategy: getSemanticStrategyForType(component.alt),
+            clicked: (lastClicked && component.alt === lastClicked) ? 1 : 0,
             position: {
                 left: Math.round(componentLeft),
                 top: Math.round(componentTop),
                 width: componentWidth,
                 height: componentHeight,
-                area: area
+                area: area,
+                centerX: Math.round(componentCenterX),
+                centerY: Math.round(componentCenterY),
+                area_ratio: Number.isFinite(areaRatio) ? Number(areaRatio.toFixed(4)) : 0
             }
         };
     });
@@ -770,7 +822,8 @@ function downloadExperimentData() {
         userId,
         consent: consentData,
         introSurvey: introSurveyData,
-        trials: allTrialsData
+        trials: allTrialsData,
+        aggregated_presence: aggregatedPresenceList
     };
 
     const dataStr = JSON.stringify(experimentData, null, 2);
@@ -806,6 +859,7 @@ function sendDataToFirebase() {
             consent: consentData,
             introSurvey: introSurveyData,
             trials: sanitizedTrials,
+            aggregated_presence: aggregatedPresenceList,
             userAgent: navigator.userAgent,
             completedAt: new Date().toISOString(),
             completedAtLocal: new Date().toString(), // 添加本地时间
@@ -950,9 +1004,12 @@ async function handleIntroSubmit(event) {
 
     // 收集开场问卷数据
     introSurveyData = {
-        brand_liking: document.querySelector('input[name="brand_liking"]:checked').value,
-        purchase_intention: document.querySelector('input[name="purchase_intention"]:checked').value,
-        consumption_frequency: document.querySelector('input[name="consumption_frequency"]:checked').value,
+        age: (document.querySelector('input[name="age"]').value || '').trim(),
+        gender: (document.querySelector('input[name="gender"]:checked') || {}).value || null,
+        income_level: (document.querySelector('input[name="income_level"]:checked') || {}).value || null,
+        coupon_willingness: (document.querySelector('input[name="coupon_willingness"]:checked') || {}).value || null,
+        livestream_intention: (document.querySelector('input[name="livestream_intention"]:checked') || {}).value || null,
+        brand_intention: (document.querySelector('input[name="brand_intention"]:checked') || {}).value || null,
         submissionTime: new Date().toISOString(),
         submissionTimeLocal: new Date().toString() // 添加本地时间
     };
@@ -1307,6 +1364,8 @@ function handleComponentClick(e) {
     
     // 记录用户点击的组件类型
     const clickedComponent = componentType;
+    window.lastClickedComponent = clickedComponent;
+    const clickedComponentType = getComponentCategoryName(clickedComponent);
     
     // 获取组件的位置和尺寸信息
     const getComponentInfo = async () => {
@@ -1334,7 +1393,11 @@ function handleComponentClick(e) {
             height: Math.round(rect.height),
             left: Math.round(componentLeft),
             top: Math.round(componentTop),
-            area: area
+            area: area,
+            centerX: Math.round(componentCenterX),
+            centerY: Math.round(componentCenterY),
+            area_ratio: Number(((rect.width * rect.height) / (backgroundDimensions.width * backgroundDimensions.height)).toFixed(4)),
+            semantic_strategy: getSemanticStrategyForType(clickedComponent)
         };
     };
     
@@ -1343,7 +1406,7 @@ function handleComponentClick(e) {
         // comment直接是ask，直接进入任务2
         renderTask1Feedback();
         setTimeout(async () => {
-            const componentInfo = await getComponentInfo();
+            // 点击后的具体位置信息不再单独记录
             renderTask2Evaluation(async (evalAnswers) => {
                 const allComponentsData = await collectAllComponentsData();
                 const appearedComponents = (() => {
@@ -1360,8 +1423,8 @@ function handleComponentClick(e) {
                 const trialData = {
                     trialNumber: currentTrial,
                     clickedComponent: clickedComponent,
+                    clickedComponentType: clickedComponentType,
                     behavior_outcome: 'ask',
-                    component_info: componentInfo,
                     components: allComponentsData,
                     appeared_components: appearedComponents,
                     generated_state: window.currentTrialState || null,
@@ -1382,7 +1445,7 @@ function handleComponentClick(e) {
             // 选择题完成后，显示反馈并进入任务2
             renderTask1Feedback();
             setTimeout(async () => {
-                const componentInfo = await getComponentInfo();
+                // 点击后的具体位置信息不再单独记录
                 renderTask2Evaluation(async (evalAnswers) => {
                     const allComponentsData = await collectAllComponentsData();
                     const appearedComponents = (() => {
@@ -1399,8 +1462,8 @@ function handleComponentClick(e) {
                     const trialData = {
                         trialNumber: currentTrial,
                         clickedComponent: clickedComponent,
+                        clickedComponentType: clickedComponentType,
                         behavior_outcome: selectedValue,
-                        component_info: componentInfo,
                         components: allComponentsData,
                         appeared_components: appearedComponents,
                         generated_state: window.currentTrialState || null,
@@ -1420,11 +1483,82 @@ function handleComponentClick(e) {
 }
 
 // 完成当前试次
-function completeTrial(trialData) {
+async function completeTrial(trialData) {
     console.log(`试次 ${currentTrial} 数据:`, trialData);
     
     // 存储到总数据数组
     allTrialsData.push(trialData);
+
+    // 生成并记录该试次的组件出现矩阵与细分数据
+    try {
+        const presenceEntry = {
+            trialNumber: currentTrial,
+            behavior_outcome: trialData && trialData.behavior_outcome ? trialData.behavior_outcome : null,
+            attribution: trialData && trialData.attribution ? trialData.attribution : null,
+            components: {}
+        };
+        const container = document.querySelector('.livestream-background');
+        const backgroundDimensions = await getBackgroundImageDimensions();
+        const presentSet = new Set((trialData.appeared_components || []));
+
+        for (const compType of ALL_COMPONENT_TYPES) {
+            const isPresent = presentSet.has(compType);
+            const isClicked = (trialData && trialData.clickedComponent === compType) ? 1 : 0;
+            if (isPresent) {
+                // 获取对应DOM
+                const selector = compType === 'comment'
+                    ? '.comment-btn'
+                    : compType === 'shopping_cart'
+                        ? '.cart-btn'
+                        : `.livestream-element.${compType}`;
+                const el = container.querySelector(selector);
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    const containerRect = el.parentElement.getBoundingClientRect();
+                    const containerLeft = rect.left - containerRect.left;
+                    const containerTop = rect.top - containerRect.top;
+                    const componentLeft = containerLeft - backgroundDimensions.left;
+                    const componentTop = containerTop - backgroundDimensions.top;
+                    const centerX = componentLeft + rect.width / 2;
+                    const centerY = componentTop + rect.height / 2;
+                    const area9 = calculateArea(centerX, centerY, backgroundDimensions);
+                    presenceEntry.components[compType] = {
+                        present: 1,
+                        clicked: isClicked,
+                        position: {
+                            left: Math.round(componentLeft),
+                            top: Math.round(componentTop),
+                            width: Math.round(rect.width),
+                            height: Math.round(rect.height),
+                            centerX: Math.round(centerX),
+                            centerY: Math.round(centerY),
+                            area_ratio: Number(((rect.width * rect.height) / (backgroundDimensions.width * backgroundDimensions.height)).toFixed(4)),
+                            area: area9
+                        },
+                        semantic_strategy: getSemanticStrategyForType(compType) || null
+                    };
+                } else {
+                    presenceEntry.components[compType] = {
+                        present: 1,
+                        clicked: isClicked,
+                        position: { left: 0, top: 0, width: 0, height: 0, centerX: 0, centerY: 0, area_ratio: 0, area: '中中' },
+                        semantic_strategy: getSemanticStrategyForType(compType) || null
+                    };
+                }
+            } else {
+                presenceEntry.components[compType] = {
+                    present: 0,
+                    clicked: 0,
+                    position: { left: 0, top: 0, width: 0, height: 0, centerX: 0, centerY: 0, area_ratio: 0, area: '中中' },
+                    semantic_strategy: getSemanticStrategyForType(compType) || null
+                };
+            }
+        }
+
+        aggregatedPresenceList.push(presenceEntry);
+    } catch (e) {
+        console.warn('生成 aggregated_presence 失败（可忽略继续）:', e);
+    }
     
     if (currentTrial === totalTrials) {
         // 实验完成，防止重复提交
@@ -1503,13 +1637,13 @@ function renderTask2Evaluation(onSubmit) {
     const task2 = document.createElement('div');
     task2.id = 'task2-evaluation';
     task2.style.margin = '24px 0 0 0';
-    task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-5 完全不同意-完全同意）：';
+    task2.innerHTML = '<b>任务2：</b>请根据该界面给您的整体感受，评价您对以下说法的同意程度（1-7 完全不同意-完全同意）：';
     const questions = [
         '界面上的<b>文字或数字信息</b>（如“库存仅剩1件”、“倒计时”、“直播专享低价/限时价”、“xx正在下单”、“xx关注了主播”、“入会领券”）对我刚刚首次点击行为的影响很大。',
         '元素的<b>视觉大小/尺寸</b>和<b>颜色</b>对我刚刚首次点击行为的影响很大。',
         '元素的<b>位置</b>对我刚刚首次点击行为的影响很大。'
     ];
-    const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5<br>完全同意'];
+    const likertLabels = ['1<br>完全不同意', '2', '3', '4', '5', '6', '7<br>完全同意'];
     questions.forEach((q, idx) => {
         const qDiv = document.createElement('div');
         qDiv.style.margin = '18px 0 8px 0';
