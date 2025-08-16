@@ -1010,6 +1010,7 @@ async function handleIntroSubmit(event) {
         coupon_willingness: (document.querySelector('input[name="coupon_willingness"]:checked') || {}).value || null,
         livestream_intention: (document.querySelector('input[name="livestream_intention"]:checked') || {}).value || null,
         brand_intention: (document.querySelector('input[name="brand_intention"]:checked') || {}).value || null,
+        contact_info: (document.querySelector('input[name="contact_info"]').value || '').trim(),
         submissionTime: new Date().toISOString(),
         submissionTimeLocal: new Date().toString() // 添加本地时间
     };

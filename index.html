@@ -77,8 +77,7 @@
                         <label><input type="radio" name="income_level" value="3k_6k" required> 3000 - 6000元</label>
                         <label><input type="radio" name="income_level" value="6k_10k" required> 6000 - 10000元</label>
                         <label><input type="radio" name="income_level" value="10k_20k" required> 10000 - 20000元</label>
-                        <label><input type="radio" name="income_level" value="20k_30k" required> 20000 - 30000元</label>
-                        <label><input type="radio" name="income_level" value="gt_30k" required> 30000元以上</label>
+                        <label><input type="radio" name="income_level" value="gt_20k" required> 20000元以上</label>
                     </div>
                 </div>
 
@@ -125,6 +124,12 @@
                         <label><input type="radio" name="brand_intention" value="6" required>6</label>
                         <label><input type="radio" name="brand_intention" value="7" required>7</label>
                     </div>
+                </div>
+
+                <!-- 问题7：联系方式（可选） -->
+                <div class="question-group">
+                    <label class="question-title">7. 您的联系方式是(微信/小红书号/手机号)? (后续有极小可能进行回访/补充数据)</label>
+                    <input type="text" name="contact_info" placeholder="请输入您的微信/小红书号/手机号" required style="width: 260px; padding: 6px;">
                 </div>
 
                 <button type="submit" class="submit-btn">开始实验</button>
